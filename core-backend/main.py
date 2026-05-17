@@ -6,18 +6,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
 from typing import Optional
+import uvicorn
 
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
-_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", "")
-ALLOWED_ORIGINS: list[str] = (
-    [o.strip() for o in _ORIGINS_ENV.split(",") if o.strip()]
-    if _ORIGINS_ENV
-    else []
-)
+# Support both CORS_ORIGINS (deployed) and ALLOWED_ORIGINS (local .env)
+_ORIGINS_ENV = os.getenv("CORS_ORIGINS") or os.getenv("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS: list[str] = [o.strip() for o in _ORIGINS_ENV.split(",") if o.strip()]
 
 _supabase: Client | None = None
 
@@ -240,3 +238,14 @@ async def get_call_history(user_id: str, limit: int = Query(20, le=100)):
         return {"calls": res.data or []}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "8000")),
+        workers=int(os.getenv("UVICORN_WORKERS", "1")),
+        log_level=os.getenv("UVICORN_LOG_LEVEL", "info"),
+    )

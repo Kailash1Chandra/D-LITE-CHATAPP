@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import { IconButton } from "@/shared/components/IconButton";
 import { ShimmerText } from "./ShimmerText";
@@ -19,7 +18,6 @@ export function AIHeader() {
             </h3>
             <span className="bg-[var(--brand-100)] text-[var(--brand-700)] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Beta</span>
           </div>
-          <div className="text-xs themed-text-3 mt-0.5">Powered by GPT</div>
         </div>
       </div>
 

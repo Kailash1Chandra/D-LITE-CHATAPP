@@ -45,40 +45,53 @@ export async function getRecentConversations(userId: string): Promise<ChatPrevie
 export async function getActiveGroups(userId: string): Promise<GroupPreview[]> {
   const supabase = await createClient();
 
+  // Simple flat query — avoids recursive RLS on nested group_members embed
   const { data: memberships } = await supabase
     .from("group_members")
-    .select(`
-      group:groups(
-        id, name,
-        members:group_members(profile:profiles(id, display_name, username)),
-        messages:group_messages(content, created_at, sender:profiles(display_name, username))
-      )
-    `)
+    .select("group_id, groups(id, name)")
     .eq("user_id", userId)
     .limit(5);
 
-  if (!memberships) return [];
+  if (!memberships?.length) return [];
+
+  const groupIds = (memberships as any[]).map(m => m.group_id).filter(Boolean);
+
+  // Fetch latest messages and members in parallel
+  const [{ data: messages }, { data: allMembers }] = await Promise.all([
+    supabase
+      .from("group_messages")
+      .select("group_id, content, created_at, sender:profiles(display_name, username)")
+      .in("group_id", groupIds)
+      .order("created_at", { ascending: false })
+      .limit(groupIds.length * 3),
+    supabase
+      .from("group_members")
+      .select("group_id, profile:profiles(id, display_name, username)")
+      .in("group_id", groupIds),
+  ]);
+
+  const lastMsgMap = new Map<string, any>();
+  for (const msg of (messages ?? []) as any[]) {
+    if (!lastMsgMap.has(msg.group_id)) lastMsgMap.set(msg.group_id, msg);
+  }
+
+  const memberMap = new Map<string, any[]>();
+  for (const mem of (allMembers ?? []) as any[]) {
+    const list = memberMap.get(mem.group_id) ?? [];
+    if (mem.profile) list.push(mem.profile);
+    memberMap.set(mem.group_id, list);
+  }
 
   return (memberships as any[]).flatMap((m) => {
-    const g = m.group;
+    const g = m.groups;
     if (!g) return [];
-    const members = (g.members || []).slice(0, 3).flatMap((mem: any) => {
-      const p = mem.profile;
-      if (!p) return [];
+
+    const members = (memberMap.get(g.id) ?? []).slice(0, 3).map((p: any) => {
       const name: string = p.display_name || p.username || "?";
-      return [{
-        id: p.id,
-        name,
-        initials: name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
-        isOnline: false,
-      }];
+      return { id: p.id, name, initials: name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(), isOnline: false };
     });
 
-    const sorted = [...(g.messages || [])].sort(
-      (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-    const lastMsg = sorted[0];
-
+    const lastMsg = lastMsgMap.get(g.id);
     return {
       id: g.id,
       name: g.name || "Unnamed Group",

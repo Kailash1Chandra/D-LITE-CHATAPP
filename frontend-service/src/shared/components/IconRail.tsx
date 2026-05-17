@@ -84,7 +84,7 @@ export function IconRail({ userInitials = "DL", userAvatarUrl }: IconRailProps) 
 
       {/* Bottom section */}
       <div className="flex flex-col items-center gap-1 w-full px-2">
-        <ThemeToggle />
+        <ThemeToggle compact />
 
         <Link
           href="/settings"

@@ -6,6 +6,7 @@ import { createClient } from "@/core/auth/supabase-client"
 export interface Message {
   id: string
   content: string
+  mediaUrl?: string
   isOwn: boolean
   time: string
   status?: "sending" | "sent" | "delivered" | "read" | "failed"
@@ -17,7 +18,7 @@ export interface Message {
 
 interface UseChatMessagesReturn {
   messages: Message[]
-  send: (content: string, replyToId?: string) => void
+  send: (content: string, mediaUrl?: string, replyToId?: string) => void
   addReaction: (messageId: string, emoji: string) => void
   deleteMessage: (id: string) => void
   loading: boolean
@@ -35,6 +36,7 @@ function toMessage(raw: any, currentUserId: string): Message {
   return {
     id: raw.id,
     content: raw.content || "",
+    mediaUrl: raw.media_url ?? undefined,
     isOwn: raw.sender_id === currentUserId,
     time: new Date(raw.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
     status: raw.status as Message["status"],
@@ -63,7 +65,7 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     const { data: rawMessages } = await supabase
       .from("direct_messages")
       .select(`
-        id, content, status, created_at, sender_id, receiver_id, reply_to_id,
+        id, content, media_url, status, created_at, sender_id, receiver_id, reply_to_id,
         reply:direct_messages!direct_messages_reply_to_id_fkey(id, content, sender_id),
         reactions:message_reactions(emoji, user_id)
       `)
@@ -99,7 +101,7 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     return () => { supabase.removeChannel(channel) }
   }, [peerId, loadMessages])
 
-  const send = React.useCallback(async (content: string, replyToId?: string) => {
+  const send = React.useCallback(async (content: string, mediaUrl?: string, replyToId?: string) => {
     const userId = userIdRef.current
     if (!userId) return
     const supabase = createClient()
@@ -108,6 +110,7 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     const optimistic: Message = {
       id: optimisticId,
       content,
+      mediaUrl,
       isOwn: true,
       time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
       status: "sending",
@@ -116,7 +119,7 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
 
     const { data, error } = await supabase
       .from("direct_messages")
-      .insert({ sender_id: userId, receiver_id: peerId, content, reply_to_id: replyToId || null, status: "sent" })
+      .insert({ sender_id: userId, receiver_id: peerId, content, media_url: mediaUrl || null, reply_to_id: replyToId || null, status: "sent" })
       .select()
       .single()
 

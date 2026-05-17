@@ -10,6 +10,7 @@ export interface GroupMessage {
   authorName: string
   role: "owner" | "admin" | "mod" | "member"
   content: string
+  mediaUrl?: string
   time: string
   dateStr?: string
 }
@@ -18,7 +19,7 @@ interface UseGroupMessagesReturn {
   group: GroupPreview | null
   members: (User & { role: "owner" | "admin" | "mod" | "member" })[]
   messages: GroupMessage[]
-  send: (content: string) => void
+  send: (content: string, mediaUrl?: string) => void
   loading: boolean
 }
 
@@ -43,23 +44,24 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
         .single(),
       supabase
         .from("group_messages")
-        .select(`id, content, created_at, sender_id, sender:profiles(id, display_name, username)`)
+        .select(`id, content, media_url, created_at, sender_id, sender:profiles(id, display_name, username)`)
         .eq("group_id", groupId)
         .order("created_at", { ascending: true }),
     ])
 
     if (groupRes.data) {
       const g = groupRes.data as any
-      const rawMembers = (g.members || []).map((m: any, i: number): User & { role: "owner" | "admin" | "mod" | "member" } => {
+      const rawMembers = (g.members || []).map((m: any): User & { role: "owner" | "admin" | "mod" | "member" } => {
         const p = m.profile
         const name: string = p.display_name || p.username || "?"
-        const roleMap = ["owner", "admin", "mod", "member"] as const
+        const dbRole: string = m.role || "Member"
+        const role = dbRole === "Owner" ? "owner" : dbRole === "Admin" ? "admin" : dbRole === "Moderator" ? "mod" : "member"
         return {
           id: p.id,
           name,
           initials: name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
           isOnline: p.status === "Online",
-          role: m.role === "Owner" ? "owner" : m.role === "Admin" ? "admin" : m.role === "Moderator" ? "mod" : "member",
+          role,
         }
       })
       setMembers(rawMembers)
@@ -84,6 +86,7 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
             authorName: m.sender_id === user.id ? "You" : name,
             role: "member",
             content: m.content || "",
+            mediaUrl: m.media_url ?? undefined,
             time: new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           } as GroupMessage
         })
@@ -103,11 +106,16 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     return () => { supabase.removeChannel(channel) }
   }, [groupId, load])
 
-  const send = React.useCallback(async (content: string) => {
+  const send = React.useCallback(async (content: string, mediaUrl?: string) => {
     const userId = userIdRef.current
     if (!userId) return
     const supabase = createClient()
-    await supabase.from("group_messages").insert({ group_id: groupId, sender_id: userId, content })
+    await supabase.from("group_messages").insert({
+      group_id: groupId,
+      sender_id: userId,
+      content,
+      media_url: mediaUrl || null,
+    })
   }, [groupId])
 
   return { group, members, messages, send, loading }

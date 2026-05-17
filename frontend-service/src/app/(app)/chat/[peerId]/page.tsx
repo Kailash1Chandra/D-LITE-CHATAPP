@@ -35,7 +35,7 @@ function formatLastSeen(iso: string | null | undefined): string {
 
 export default function ChatPage() {
   const { peerId } = useParams<{ peerId: string }>();
-  const { messages, send, addReaction, loading } = useChatMessages(peerId);
+  const { messages, send, addReaction, deleteMessage, editMessage, loading } = useChatMessages(peerId);
   const { isOnline } = usePresence();
 
   const [peer, setPeer] = useState<PeerUser>({
@@ -88,6 +88,8 @@ export default function ChatPage() {
     status: (m.status === "delivered" ? "sent" : m.status === "failed" ? "sending" : m.status) as ThreadMessage["status"],
     reactions: m.reactions?.map((r) => ({ emoji: r.emoji, count: r.count, active: r.reacted })),
     onReact: (emoji: string) => addReaction(m.id, emoji),
+    onDelete: m.isOwn ? (id: string) => deleteMessage(id) : undefined,
+    onEdit: m.isOwn ? (id: string, text: string) => editMessage(id, text) : undefined,
   }));
 
   return (

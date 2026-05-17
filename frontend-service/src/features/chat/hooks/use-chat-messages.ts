@@ -21,6 +21,7 @@ interface UseChatMessagesReturn {
   send: (content: string, mediaUrl?: string, replyToId?: string) => void
   addReaction: (messageId: string, emoji: string) => void
   deleteMessage: (id: string) => void
+  editMessage: (id: string, newContent: string) => void
   loading: boolean
 }
 
@@ -147,5 +148,13 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     await supabase.from("direct_messages").delete().eq("id", id).eq("sender_id", userId)
   }, [])
 
-  return { messages, send, addReaction, deleteMessage, loading }
+  const editMessage = React.useCallback(async (id: string, newContent: string) => {
+    const userId = userIdRef.current
+    if (!userId) return
+    setMessages((prev) => prev.map((m) => m.id === id ? { ...m, content: newContent } : m))
+    const supabase = createClient()
+    await supabase.from("direct_messages").update({ content: newContent }).eq("id", id).eq("sender_id", userId)
+  }, [])
+
+  return { messages, send, addReaction, deleteMessage, editMessage, loading }
 }

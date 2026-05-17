@@ -12,8 +12,8 @@ export default function AppearanceSettingsPage() {
     <div className="animate-in fade-in zoom-in-95 duration-300">
       <SettingsHeader title="Appearance" description="Customize how D-Lite looks and feels on your device." />
 
-      <div className="bg-surface border border-gray-100 rounded-2xl p-6 shadow-sm">
-        <h3 className="font-bold text-gray-900 mb-4">Theme</h3>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+        <h3 className="font-bold themed-text mb-4">Theme</h3>
 
         <SettingRow
           label="Dark Mode"

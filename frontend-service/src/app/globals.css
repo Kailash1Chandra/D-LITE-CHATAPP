@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand */
+  /* Brand — static, intentionally don't change with dark mode */
   --color-brand-50: #fff7ed;
   --color-brand-100: #ffedd5;
   --color-brand-200: #fed7aa;
@@ -20,15 +20,16 @@
   --color-danger: #ef4444;
   --color-info: #3b82f6;
 
-  /* Surfaces */
-  --color-canvas: #fef9f0;
-  --color-surface: #ffffff;
-  --color-surface-muted: #fef3e1;
-  --color-dark-bg: #0a0612;
-
   /* Easings */
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Dynamic surface tokens — these follow data-theme changes */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-canvas: var(--canvas-solid);
 }
 
 /* ============================================

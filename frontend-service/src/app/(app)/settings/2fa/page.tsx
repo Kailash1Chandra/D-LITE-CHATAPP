@@ -14,11 +14,11 @@ export default function TwoFactorAuthPage() {
     <div className="animate-in fade-in zoom-in-95 duration-300">
       <SettingsHeader title="Two-Factor Authentication" description="Add an extra layer of security to your account." />
       
-      <div className="bg-surface border border-gray-100 rounded-2xl p-8 shadow-sm text-center flex flex-col items-center">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-8 shadow-sm text-center flex flex-col items-center">
         
         {step === "intro" && (
           <div className="max-w-sm animate-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 rounded-full bg-[var(--row-hover-bg)] flex items-center justify-center mx-auto mb-6">
               <ShieldCheck size={32} className="text-brand-500" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Protect your account</h3>
@@ -33,7 +33,7 @@ export default function TwoFactorAuthPage() {
 
         {step === "setup" && (
           <div className="max-w-sm w-full animate-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 rounded-full bg-[var(--row-hover-bg)] flex items-center justify-center mx-auto mb-6">
               <Smartphone size={32} className="text-brand-500" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Enter Verification Code</h3>

@@ -14,8 +14,8 @@ export default function PrivacySettingsPage() {
     <div className="animate-in fade-in zoom-in-95 duration-300">
       <SettingsHeader title="Privacy & Safety" description="Manage your visibility and active sessions." />
       
-      <div className="bg-surface border border-gray-100 rounded-2xl p-6 shadow-sm mb-8">
-        <h3 className="font-bold text-gray-900 mb-4">Activity Status</h3>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-sm mb-8">
+        <h3 className="font-bold themed-text mb-4">Activity Status</h3>
         
         <SettingRow 
           label="Show Online Status" 
@@ -37,8 +37,8 @@ export default function PrivacySettingsPage() {
         />
       </div>
 
-      <div className="bg-surface border border-gray-100 rounded-2xl p-6 shadow-sm">
-        <h3 className="font-bold text-gray-900 mb-4">Active Sessions</h3>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+        <h3 className="font-bold themed-text mb-4">Active Sessions</h3>
         <div className="space-y-1">
           <DeviceSession 
             device="MacBook Pro (macOS)" 

@@ -14,8 +14,8 @@ export default function NotificationsSettingsPage() {
     <div className="animate-in fade-in zoom-in-95 duration-300">
       <SettingsHeader title="Notifications" description="Choose what you want to be notified about." />
       
-      <div className="bg-surface border border-gray-100 rounded-2xl p-6 shadow-sm">
-        <h3 className="font-bold text-gray-900 mb-4">Push Notifications</h3>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+        <h3 className="font-bold themed-text mb-4">Push Notifications</h3>
         
         <SettingRow 
           label="Direct Messages" 
@@ -38,7 +38,7 @@ export default function NotificationsSettingsPage() {
           onChange={setCalls} 
         />
         
-        <h3 className="font-bold text-gray-900 mb-4 mt-8 pt-4 border-t border-gray-50">Email Notifications</h3>
+        <h3 className="font-bold themed-text mb-4 mt-8 pt-4 border-t border-[var(--border-soft)]">Email Notifications</h3>
         <SettingRow 
           label="Daily Summary" 
           description="Receive a daily email summarizing unread activity." 

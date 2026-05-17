@@ -63,7 +63,7 @@ class MessageItem(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: Optional[list[MessageItem]] = []
-    model: Optional[str] = "claude"   # ignored — OpenRouter model set via env
+    model: Optional[str] = "gpt"   # model set via OPENROUTER_MODEL env var
     stream: Optional[bool] = False
 
 class TTSRequest(BaseModel):

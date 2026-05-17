@@ -149,7 +149,7 @@ export default function AIPage() {
                   How can I help you today?
                 </h2>
                 <p className="themed-text-3 text-sm mb-8">
-                  Powered by Claude · Ask anything about your chats
+                  Powered by GPT · Ask anything about your chats
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
                   {SUGGESTIONS.map((s) => (

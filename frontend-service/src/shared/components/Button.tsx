@@ -30,8 +30,8 @@ export function Button({
     primary:
       "bg-brand-500 text-white hover:bg-brand-600 focus:ring-brand-500 shadow-sm border border-brand-600",
     secondary:
-      "bg-surface text-gray-800 hover:bg-gray-50 border border-gray-200 focus:ring-gray-200 shadow-sm",
-    ghost: "bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-200",
+      "bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--row-hover-bg)] border border-[var(--border)] focus:ring-[var(--brand-500)] shadow-sm",
+    ghost: "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--row-hover-bg)] hover:text-[var(--text-primary)] focus:ring-[var(--brand-500)]",
     danger: "bg-danger text-white hover:bg-red-600 focus:ring-danger shadow-sm border border-red-600",
   };
 

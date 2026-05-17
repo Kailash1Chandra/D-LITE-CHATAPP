@@ -46,7 +46,7 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col h-full bg-canvas p-8 max-w-4xl mx-auto w-full">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
+        <h1 className="text-2xl font-bold themed-text">Notifications</h1>
         <IconButton size="sm" variant="ghost" className="text-brand-500 hover:bg-brand-50" tooltip="Mark all as read">
           <CheckCheck size={18} />
         </IconButton>
@@ -58,7 +58,7 @@ export default function NotificationsPage() {
         {filtered.length > 0 ? (
           filtered.map(n => <NotificationItem key={n.id} {...n} />)
         ) : (
-          <div className="text-center text-gray-500 py-12">No notifications found.</div>
+          <div className="text-center themed-text-3 py-12">No notifications found.</div>
         )}
       </div>
     </div>

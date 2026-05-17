@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Users, Phone, Sparkles, Settings, LogOut } from "lucide-react";
+import { MessageSquare, Users, Phone, Sparkles, Settings, LogOut, LayoutDashboard } from "lucide-react";
 import { Avatar } from "@/shared/components/Avatar";
-import { Badge } from "@/shared/components/Badge";
 import { ThemeToggle } from "@/shared/components/ThemeToggle";
 import { signOut } from "@/core/auth/actions";
 
@@ -13,83 +12,127 @@ interface IconRailProps {
   userAvatarUrl?: string;
 }
 
+const navItems = [
+  { href: "/chat",    icon: MessageSquare, label: "Chats"        },
+  { href: "/groups",  icon: Users,         label: "Groups"       },
+  { href: "/calls",   icon: Phone,         label: "Calls"        },
+  { href: "/ai",      icon: Sparkles,      label: "AI Assistant" },
+];
+
 export function IconRail({ userInitials = "DL", userAvatarUrl }: IconRailProps) {
   const pathname = usePathname();
 
-  const navItems = [
-    { href: "/chat", icon: MessageSquare, label: "Chat", badge: 3 },
-    { href: "/groups", icon: Users, label: "Groups" },
-    { href: "/calls", icon: Phone, label: "Calls" },
-    { href: "/ai", icon: Sparkles, label: "AI Assistant" },
-  ];
-
   return (
-    <div className="w-[60px] h-screen themed-surface border-r themed-border flex flex-col items-center py-4 justify-between shrink-0">
-      <div className="flex flex-col items-center gap-6 w-full">
-        <Link href="/dashboard" className="w-10 h-10 rounded-xl brand-grad flex items-center justify-center shadow-accent mb-2">
-          <MessageSquare size={20} className="text-white" />
-        </Link>
+    <nav
+      className="w-[64px] h-screen flex flex-col items-center py-4 shrink-0 z-10"
+      style={{
+        background: "var(--rail-bg)",
+        borderRight: "1px solid var(--rail-border)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
+      {/* Logo */}
+      <Link
+        href="/dashboard"
+        className="w-10 h-10 rounded-2xl flex items-center justify-center mb-6 transition-transform hover:scale-105"
+        style={{ background: "var(--grad-brand)", boxShadow: "var(--shadow-glow)" }}
+        title="Dashboard"
+      >
+        <LayoutDashboard size={18} className="text-white" />
+      </Link>
 
-        <div className="flex flex-col gap-4 w-full px-2">
-          {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            const Icon = item.icon;
+      {/* Nav links */}
+      <div className="flex flex-col items-center gap-1 flex-1 w-full px-2">
+        {navItems.map(({ href, icon: Icon, label }) => {
+          const isActive = pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              title={label}
+              className="relative w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group"
+              style={{
+                background: isActive ? "var(--grad-brand)" : "transparent",
+                boxShadow: isActive ? "var(--shadow-glow)" : "none",
+                color: isActive ? "#fff" : "var(--rail-text)",
+              }}
+              onMouseEnter={e => {
+                if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--row-hover-bg)";
+              }}
+              onMouseLeave={e => {
+                if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent";
+              }}
+            >
+              <Icon size={19} />
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`relative flex items-center justify-center w-11 h-11 mx-auto rounded-xl transition-all ${
-                  isActive
-                    ? "brand-grad text-white shadow-accent"
-                    : "text-gray-400 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-                title={item.label}
+              {/* Tooltip */}
+              <span
+                className="absolute left-full ml-3 px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
+                style={{
+                  background: "var(--surface-elevated, var(--surface))",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--shadow-elevated)",
+                }}
               >
-                <Icon size={20} className={isActive ? "text-white" : ""} />
-                {item.badge && (
-                  <div className="absolute -top-1 -right-1">
-                    <Badge count={item.badge} className="scale-75 origin-top-right border-2 border-surface" />
-                  </div>
-                )}
-              </Link>
-            );
-          })}
-        </div>
+                {label}
+              </span>
+            </Link>
+          );
+        })}
       </div>
 
-      <div className="flex flex-col items-center gap-4 w-full">
+      {/* Bottom section */}
+      <div className="flex flex-col items-center gap-1 w-full px-2">
         <ThemeToggle />
+
         <Link
           href="/settings"
-          className={`flex items-center justify-center w-11 h-11 rounded-xl transition-colors ${
-            pathname.startsWith("/settings") ? "bg-gray-100 text-brand-600" : "text-gray-400 hover:text-gray-900 hover:bg-gray-50"
-          }`}
           title="Settings"
+          className="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200"
+          style={{
+            color: pathname.startsWith("/settings") ? "var(--brand-text)" : "var(--rail-text)",
+            background: pathname.startsWith("/settings") ? "var(--row-hover-bg)" : "transparent",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--row-hover-bg)"; }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.background = pathname.startsWith("/settings") ? "var(--row-hover-bg)" : "transparent";
+          }}
         >
-          <Settings size={20} />
+          <Settings size={19} />
         </Link>
 
         <form action={signOut}>
           <button
             type="submit"
-            className="flex items-center justify-center w-11 h-11 rounded-xl transition-colors text-gray-400 hover:text-red-500 hover:bg-red-50"
             title="Sign out"
+            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group"
+            style={{ color: "var(--rail-text)" }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.color = "var(--danger)";
+              (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.08)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.color = "var(--rail-text)";
+              (e.currentTarget as HTMLElement).style.background = "transparent";
+            }}
           >
-            <LogOut size={20} />
+            <LogOut size={19} />
           </button>
         </form>
 
-        <Link href="/settings">
-          <Avatar
-            initials={userInitials}
-            src={userAvatarUrl}
-            online
-            size="sm"
-            className="hover:scale-105 transition-transform cursor-pointer"
-          />
-        </Link>
+        <div className="mt-1">
+          <Link href="/settings" title="Profile">
+            <Avatar
+              initials={userInitials}
+              src={userAvatarUrl}
+              online
+              size="sm"
+              className="hover:scale-105 transition-transform cursor-pointer"
+            />
+          </Link>
+        </div>
       </div>
-    </div>
+    </nav>
   );
 }

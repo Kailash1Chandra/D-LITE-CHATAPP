@@ -80,10 +80,10 @@ function ToastItem({ toast, onDismiss }: { toast: ToastProps; onDismiss: () => v
       className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg w-80 ${typeStyles[toast.type || "info"]}`}
     >
       <div className="flex-1">
-        <h4 className="text-sm font-semibold text-gray-900">{toast.title}</h4>
-        {toast.description && <p className="text-sm text-gray-500 mt-1">{toast.description}</p>}
+        <h4 className="text-sm font-semibold themed-text">{toast.title}</h4>
+        {toast.description && <p className="text-sm themed-text-3 mt-1">{toast.description}</p>}
       </div>
-      <button onClick={onDismiss} className="text-gray-400 hover:text-gray-600 transition-colors">
+      <button onClick={onDismiss} className="themed-text-3 hover:themed-text transition-colors">
         <X size={16} />
       </button>
     </motion.div>

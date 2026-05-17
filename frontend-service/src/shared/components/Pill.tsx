@@ -11,19 +11,19 @@ export interface PillProps {
 
 export function Pill({ children, variant = "neutral", dot = false, className = "" }: PillProps) {
   const variantStyles = {
-    success: "bg-green-100 text-green-800",
-    warn: "bg-yellow-100 text-yellow-800",
-    danger: "bg-red-100 text-red-800",
-    brand: "bg-brand-100 text-brand-700",
-    neutral: "bg-gray-100 text-gray-800",
+    success: "bg-[var(--success-bg)] text-[var(--success)]",
+    warn: "bg-[rgba(245,158,11,0.12)] text-[var(--warn)]",
+    danger: "bg-[rgba(239,68,68,0.1)] text-[var(--danger)]",
+    brand: "bg-[var(--row-hover-bg)] text-[var(--brand-text)]",
+    neutral: "bg-[var(--surface-2,var(--surface))] text-[var(--text-secondary)]",
   };
 
   const dotStyles = {
-    success: "bg-success",
-    warn: "bg-warn",
-    danger: "bg-danger",
-    brand: "bg-brand-500",
-    neutral: "bg-gray-400",
+    success: "bg-[var(--success)]",
+    warn: "bg-[var(--warn)]",
+    danger: "bg-[var(--danger)]",
+    brand: "bg-[var(--brand-500)]",
+    neutral: "bg-[var(--text-muted)]",
   };
 
   return (

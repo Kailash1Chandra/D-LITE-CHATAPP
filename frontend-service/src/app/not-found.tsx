@@ -9,8 +9,8 @@ export default function GlobalNotFound() {
       <div className="w-20 h-20 rounded-3xl brand-grad flex items-center justify-center shadow-accent text-white mb-8">
         <AlertTriangle size={40} />
       </div>
-      <h1 className="text-4xl font-extrabold text-gray-900 mb-4">404 - Page Not Found</h1>
-      <p className="text-gray-500 mb-8 max-w-md">
+      <h1 className="text-4xl font-extrabold themed-text mb-4">404 - Page Not Found</h1>
+      <p className="themed-text-3 mb-8 max-w-md">
         The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
       </p>
       <Link href="/dashboard">

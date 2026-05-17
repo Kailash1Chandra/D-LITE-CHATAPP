@@ -10,7 +10,7 @@ export async function RecentChatsGrid() {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900">Recent Chats</h2>
+        <h2 className="text-lg font-bold themed-text">Recent Chats</h2>
         <Link href="/chat" className="text-sm font-medium text-brand-500 hover:text-brand-600 transition-colors">
           View all →
         </Link>

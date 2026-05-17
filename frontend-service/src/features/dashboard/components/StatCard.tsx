@@ -1,63 +1,75 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion, useAnimation } from "framer-motion";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 export interface StatCardProps {
   label: string;
   value: number;
-  delta: number;
+  delta?: number;
   icon: React.ReactNode;
   iconColorClass?: string;
   suffix?: string;
 }
 
-export function StatCard({ label, value, delta, icon, iconColorClass = "text-brand-500", suffix = "" }: StatCardProps) {
+export function StatCard({ label, value, delta = 0, icon, iconColorClass = "text-brand-500", suffix = "" }: StatCardProps) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    let start = 0;
-    const end = value;
-    if (start === end) return;
-
-    let totalDuration = 1000;
-    let incrementTime = (totalDuration / end) * 2;
-    
-    // Cap increment time so large numbers animate reasonably
-    if (incrementTime > 50) incrementTime = 50;
-
+    if (value === 0) return;
+    let current = 0;
+    const step = Math.max(1, Math.ceil(value / 30));
     const timer = setInterval(() => {
-      start += Math.max(1, Math.floor(end / 20));
-      if (start > end) start = end;
-      setCount(start);
-      if (start === end) clearInterval(timer);
-    }, incrementTime);
-
+      current = Math.min(current + step, value);
+      setCount(current);
+      if (current >= value) clearInterval(timer);
+    }, 30);
     return () => clearInterval(timer);
   }, [value]);
 
   const isPositive = delta >= 0;
 
   return (
-    <motion.div 
-      whileHover={{ y: -4, scale: 1.01 }}
-      className="themed-surface border themed-border rounded-2xl p-5 shadow-card transition-shadow hover:shadow-elevated"
+    <motion.div
+      whileHover={{ y: -3, scale: 1.01 }}
+      transition={{ duration: 0.2 }}
+      className="rounded-2xl p-5 flex flex-col gap-4"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        boxShadow: "var(--shadow-card)",
+      }}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-2.5 rounded-xl themed-surface-2 border themed-border ${iconColorClass}`}>
+      <div className="flex items-start justify-between">
+        <div
+          className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconColorClass}`}
+          style={{ background: "var(--surface-2, var(--surface))", border: "1px solid var(--border)" }}
+        >
           {icon}
         </div>
-        <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${isPositive ? "text-success bg-green-50" : "text-danger bg-red-50"}`}>
-          {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-          {Math.abs(delta)}%
-        </div>
+
+        {delta !== 0 && (
+          <div
+            className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full"
+            style={{
+              background: isPositive ? "var(--success-bg)" : "rgba(239,68,68,0.1)",
+              color: isPositive ? "var(--success)" : "var(--danger)",
+            }}
+          >
+            {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            {Math.abs(delta)}%
+          </div>
+        )}
       </div>
+
       <div>
-        <p className="text-sm font-medium themed-text-3 mb-1">{label}</p>
-        <h3 className="text-2xl font-bold themed-text">
-          {count}{suffix}
-        </h3>
+        <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
+          {label}
+        </p>
+        <p className="text-2xl font-black" style={{ color: "var(--text-primary)" }}>
+          {count.toLocaleString()}{suffix}
+        </p>
       </div>
     </motion.div>
   );

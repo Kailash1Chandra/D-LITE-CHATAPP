@@ -6,7 +6,7 @@ import { TypingIndicator } from "./TypingIndicator";
 
 export interface ThreadMessage extends MessageBubbleProps {
   id: string;
-  dateStr?: string; // Optional separator before this message
+  dateStr?: string;
 }
 
 export interface MessageThreadProps {
@@ -22,14 +22,23 @@ export function MessageThread({ messages, typingUser }: MessageThreadProps) {
   }, [messages, typingUser]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth custom-scrollbar">
       {messages.map((msg) => (
         <React.Fragment key={msg.id}>
           {msg.dateStr && (
-            <div className="flex justify-center my-6">
-              <span className="bg-gray-100 text-gray-500 text-xs font-medium px-3 py-1 rounded-full shadow-sm">
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+              <span
+                className="text-[11px] font-semibold px-3 py-1 rounded-full"
+                style={{
+                  background: "var(--surface-2, var(--surface))",
+                  color: "var(--text-muted)",
+                  border: "1px solid var(--border)",
+                }}
+              >
                 {msg.dateStr}
               </span>
+              <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
             </div>
           )}
           <MessageBubble {...msg} />

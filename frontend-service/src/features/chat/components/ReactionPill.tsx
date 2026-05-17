@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 export interface ReactionPillProps {
@@ -20,14 +20,15 @@ export function ReactionPill({ emoji, count, active = false, onClick }: Reaction
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border shadow-sm transition-colors ${
-        active
-          ? "bg-brand-50 border-brand-200 text-brand-700"
-          : "bg-surface border-gray-100 text-gray-600 hover:border-gray-200 hover:bg-gray-50"
-      }`}
+      className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border shadow-sm transition-colors"
+      style={{
+        background: active ? "var(--row-hover-bg)" : "var(--surface)",
+        borderColor: active ? "var(--border-strong)" : "var(--border)",
+        color: active ? "var(--brand-text)" : "var(--text-secondary)",
+      }}
     >
       <span>{emoji}</span>
-      <span className={active ? "text-brand-600" : "text-gray-500"}>
+      <span style={{ color: active ? "var(--brand-text)" : "var(--text-muted)" }}>
         {count + (isHovered && !active ? 1 : 0)}
       </span>
     </motion.button>

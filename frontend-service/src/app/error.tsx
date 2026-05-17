@@ -23,8 +23,8 @@ export default function GlobalError({
           <div className="w-20 h-20 rounded-3xl bg-danger/10 border-2 border-danger/20 flex items-center justify-center text-danger mb-8">
             <AlertCircle size={40} />
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Something went wrong</h1>
-          <p className="text-gray-500 mb-8 max-w-md">
+          <h1 className="text-4xl font-extrabold themed-text mb-4">Something went wrong</h1>
+          <p className="themed-text-3 mb-8 max-w-md">
             We've encountered an unexpected error. Our engineering team has been notified.
           </p>
           <div className="flex gap-4">

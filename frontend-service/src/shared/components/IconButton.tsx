@@ -31,8 +31,8 @@ export function IconButton({
 
   const variantStyles = {
     primary: "bg-brand-500 text-white hover:bg-brand-600 shadow-sm",
-    secondary: "bg-surface border border-gray-200 text-gray-700 hover:bg-gray-50",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100",
+    secondary: "bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--row-hover-bg)]",
+    ghost: "bg-transparent text-[var(--text-secondary)] hover:bg-[var(--row-hover-bg)] hover:text-[var(--text-primary)]",
   };
 
   const disabledStyles = disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer";
@@ -55,7 +55,8 @@ export function IconButton({
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-50 pointer-events-none shadow-sm"
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 text-xs rounded whitespace-nowrap z-50 pointer-events-none shadow-sm"
+            style={{ background: "var(--text-primary)", color: "var(--canvas-solid, #fff)" }}
           >
             {tooltip}
           </motion.div>

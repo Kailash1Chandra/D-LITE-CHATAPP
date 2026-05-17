@@ -7,8 +7,8 @@ export default function ChatIndexPage() {
       <div className="flex h-24 w-24 items-center justify-center rounded-full brand-grad mb-6 shadow-accent opacity-80">
         <MessageSquare className="h-10 w-10 text-white" />
       </div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Messages</h2>
-      <p className="text-gray-500 max-w-sm">
+      <h2 className="text-2xl font-bold themed-text mb-2">Your Messages</h2>
+      <p className="themed-text-3 max-w-sm">
         Select a conversation from the sidebar or start a new chat to begin messaging.
       </p>
     </div>

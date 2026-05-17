@@ -273,6 +273,30 @@ create policy "calls_update" on public.calls
   using (auth.uid() = caller_id or auth.uid() = receiver_id);
 
 
+-- ── Grants ───────────────────────────────────────────────────
+--
+-- After a fresh DROP + re-CREATE, Supabase does not automatically
+-- re-grant table access. Without these, all REST API calls return 403.
+
+grant usage on schema public to anon, authenticated;
+
+grant select                       on public.profiles          to anon, authenticated;
+grant insert, update               on public.profiles          to authenticated;
+
+grant select, insert, update, delete on public.direct_messages   to authenticated;
+grant select, insert, delete         on public.message_reactions  to authenticated;
+
+grant select                         on public.groups             to anon, authenticated;
+grant insert, update, delete         on public.groups             to authenticated;
+
+grant select, insert, delete         on public.group_members      to authenticated;
+grant select, insert, update, delete on public.group_messages     to authenticated;
+
+grant select, insert, update         on public.calls              to authenticated;
+
+grant execute on function public.get_my_group_ids() to authenticated;
+
+
 -- ── Realtime ──────────────────────────────────────────────────
 
 alter publication supabase_realtime add table public.direct_messages;

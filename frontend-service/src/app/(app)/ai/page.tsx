@@ -36,6 +36,13 @@ export default function AIPage() {
   // history sent to backend for context (role/content pairs)
   const historyRef = useRef<{ role: string; content: string }[]>([]);
 
+  function clearChat() {
+    setMessages([]);
+    setComposerVal("");
+    setBusy(false);
+    historyRef.current = [];
+  }
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -128,10 +135,10 @@ export default function AIPage() {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-canvas">
-      <AIHistorySidebar />
+      <AIHistorySidebar onNew={clearChat} />
 
       <div className="flex-1 flex flex-col h-full relative z-0">
-        <AIHeader />
+        <AIHeader onClear={clearChat} />
 
         <div className="flex-1 overflow-y-auto p-6 scroll-smooth scrollbar-thin flex flex-col items-center">
           <div className="w-full max-w-4xl">

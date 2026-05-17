@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useRouter } from "next/navigation";
 import { Phone, Video, MoreVertical, Hash, Lock } from "lucide-react";
 import { IconButton } from "@/shared/components/IconButton";
 import { StackedAvatar } from "./StackedAvatar";
@@ -13,10 +13,18 @@ export interface GroupHeaderProps {
 }
 
 export function GroupHeader({ group, isPrivate = false }: GroupHeaderProps) {
+  const router = useRouter();
   const onlineCount = group.members.filter(m => m.isOnline).length;
 
+  function startCall(type: "audio" | "video") {
+    router.push(`/call/group-${group.id}?type=${type}&groupId=${group.id}`);
+  }
+
   return (
-    <div className="h-[72px] shrink-0 border-b themed-border themed-surface/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10">
+    <div
+      className="h-[72px] shrink-0 border-b px-6 flex items-center justify-between sticky top-0 z-10"
+      style={{ background: "var(--header-bg)", borderColor: "var(--header-border)" }}
+    >
       <div className="flex items-center gap-4 cursor-pointer group">
         <StackedAvatar members={group.members} max={3} />
         <div>
@@ -29,8 +37,8 @@ export function GroupHeader({ group, isPrivate = false }: GroupHeaderProps) {
               {isPrivate ? "Private" : "Public"}
             </Pill>
           </div>
-          <div className="text-xs themed-text-3 flex items-center h-4 mt-0.5">
-            <span className="text-success font-medium">{onlineCount} online</span>
+          <div className="text-xs flex items-center h-4 mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+            <span style={{ color: "var(--success)" }} className="font-medium">{onlineCount} online</span>
             <span className="mx-1.5">·</span>
             <span>{group.members.length} members</span>
           </div>
@@ -38,13 +46,13 @@ export function GroupHeader({ group, isPrivate = false }: GroupHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Audio Call">
+        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Audio Call" onClick={() => startCall("audio")}>
           <Phone size={20} />
         </IconButton>
-        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Video Call">
+        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Video Call" onClick={() => startCall("video")}>
           <Video size={20} />
         </IconButton>
-        <div className="w-px h-6 themed-border bg-[var(--border-soft)] mx-1" />
+        <div className="w-px h-6 mx-1" style={{ background: "var(--border)" }} />
         <IconButton size="md" variant="ghost" className="themed-text-2 hover:themed-text" tooltip="More">
           <MoreVertical size={20} />
         </IconButton>

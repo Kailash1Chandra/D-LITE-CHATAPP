@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Phone, Video, MoreVertical } from "lucide-react";
 import { Avatar } from "@/shared/components/Avatar";
 import { IconButton } from "@/shared/components/IconButton";
@@ -13,7 +14,13 @@ export interface ChatHeaderProps {
 }
 
 export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
+  const router = useRouter();
   const statusLine = isTyping ? null : (subText ?? (user.isOnline ? "Online now" : "Last seen recently"));
+
+  function startCall(type: "audio" | "video") {
+    const roomId = `dm-${user.id}`;
+    router.push(`/call/${roomId}?type=${type}&peerId=${user.id}`);
+  }
 
   return (
     <div className="h-[72px] shrink-0 border-b themed-border px-6 flex items-center justify-between sticky top-0 z-10"
@@ -40,10 +47,10 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Audio Call">
+        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Audio Call" onClick={() => startCall("audio")}>
           <Phone size={20} />
         </IconButton>
-        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Video Call">
+        <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Video Call" onClick={() => startCall("video")}>
           <Video size={20} />
         </IconButton>
         <div className="w-px h-6 mx-1" style={{ background: "var(--border)" }} />

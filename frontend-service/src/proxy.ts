@@ -4,7 +4,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  // Guard: if env vars are missing, skip auth and let pages handle it
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -26,13 +25,12 @@ export async function proxy(request: NextRequest) {
     },
   })
 
-  // Wrap in try-catch: a Supabase network error must not 500 the whole app
   let user = null
   try {
     const { data } = await supabase.auth.getUser()
     user = data.user
   } catch {
-    // Supabase unreachable — treat as unauthenticated, protected routes will redirect to login
+    // Supabase unreachable — treat as unauthenticated
   }
 
   const { pathname } = request.nextUrl
@@ -42,6 +40,10 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/signup') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/reset-password')
+
+  const isMfaRoute =
+    pathname.startsWith('/setup-authenticator') ||
+    pathname.startsWith('/verify-authenticator')
 
   const isProtectedRoute =
     pathname.startsWith('/dashboard') ||
@@ -53,13 +55,34 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/notifications') ||
     pathname.startsWith('/settings')
 
-  if (isProtectedRoute && !user) {
+  // Not logged in — block protected and MFA pages
+  if (!user) {
+    if (isProtectedRoute || isMfaRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
+  // Logged in — check MFA assurance level
+  let needsMfa = false
+  try {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    needsMfa = aal?.currentLevel === 'aal1' && aal?.nextLevel === 'aal2'
+  } catch {
+    // MFA check failed — don't block the user
+  }
+
+  // Has enrolled MFA but not yet verified this session → must verify first
+  if (needsMfa && isProtectedRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/verify-authenticator'
     return NextResponse.redirect(url)
   }
 
-  if (isAuthRoute && user) {
+  // Fully authenticated — redirect away from auth and MFA setup pages
+  if (!needsMfa && (isAuthRoute || isMfaRoute)) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

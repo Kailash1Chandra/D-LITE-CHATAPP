@@ -38,13 +38,6 @@ export default function SetupAuthenticatorPage() {
     setError(null);
     const supabase = createClient();
 
-    // Clean up any existing unverified TOTP factors first
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const unverified = factors?.totp?.filter(f => f.status === "unverified") ?? [];
-    for (const f of unverified) {
-      await supabase.auth.mfa.unenroll({ factorId: f.id });
-    }
-
     const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "D-Lite Authenticator" });
     if (enrollError || !data) {
       setError(enrollError?.message ?? "Failed to set up authenticator");

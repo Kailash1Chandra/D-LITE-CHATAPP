@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ToastProvider } from "@/shared/components/Toast";
 import { ThemeProvider } from "@/shared/theme/ThemeProvider";
 
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
+const inter = localFont({
+  src: "../../public/fonts/inter-variable.woff2",
   variable: "--font-inter",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

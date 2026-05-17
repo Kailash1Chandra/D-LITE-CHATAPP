@@ -30,13 +30,22 @@ export function MessageBubble({
 
   return (
     <div className={`flex w-full mb-4 ${isOut ? "justify-end" : "justify-start"} group relative`}>
-      {/* Reaction picker on hover */}
-      <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 ${isOut ? "right-full mr-2" : "left-full ml-2"}`}>
-        {["🔥", "👍", "❤️"].map(emoji => (
+      {/* Reaction picker — appears above bubble on hover */}
+      <div
+        className={`absolute -top-8 opacity-0 group-hover:opacity-100 transition-all duration-150 flex gap-1 z-20 pointer-events-none group-hover:pointer-events-auto ${isOut ? "right-0" : "left-0"}`}
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderRadius: 99,
+          padding: "3px 6px",
+          boxShadow: "var(--shadow-elevated)",
+        }}
+      >
+        {["❤️", "👍", "😂", "😮", "🔥"].map(emoji => (
           <button
             key={emoji}
             onClick={() => onReact?.(emoji)}
-            className="w-8 h-8 flex items-center justify-center rounded-full themed-surface shadow-sm themed-border hover:scale-110 transition-transform text-sm"
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-125 transition-transform text-base"
           >
             {emoji}
           </button>

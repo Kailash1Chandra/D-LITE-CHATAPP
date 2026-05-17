@@ -286,9 +286,16 @@
   [data-theme="dark"] .reaction-pill { background: var(--surface-elevated); box-shadow: 0 0 12px rgba(251, 191, 36, 0.2); }
 
   /* Scrollbar */
-  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 3px; }
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+  .scrollbar-thin::-webkit-scrollbar,
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track,
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb,
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 99px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover,
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+  /* Firefox */
+  .custom-scrollbar { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
 
   /* Smooth transitions */
   html { transition: background 0.4s ease; }

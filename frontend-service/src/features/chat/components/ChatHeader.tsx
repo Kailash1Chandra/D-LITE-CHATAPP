@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Phone, Video, MoreVertical } from "lucide-react";
 import { Avatar } from "@/shared/components/Avatar";
 import { IconButton } from "@/shared/components/IconButton";
@@ -10,11 +9,16 @@ import { User } from "@/features/dashboard/lib/mock-data";
 export interface ChatHeaderProps {
   user: User;
   isTyping?: boolean;
+  subText?: string;
 }
 
-export function ChatHeader({ user, isTyping }: ChatHeaderProps) {
+export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
+  const statusLine = isTyping ? null : (subText ?? (user.isOnline ? "Online now" : "Last seen recently"));
+
   return (
-    <div className="h-[72px] shrink-0 border-b themed-border themed-surface/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-10">
+    <div className="h-[72px] shrink-0 border-b themed-border px-6 flex items-center justify-between sticky top-0 z-10"
+      style={{ background: "var(--header-bg)", borderColor: "var(--header-border)" }}
+    >
       <div className="flex items-center gap-4 cursor-pointer group">
         <Avatar initials={user.initials} online={user.isOnline} verified={user.isVerified} size="md" />
         <div>
@@ -23,11 +27,13 @@ export function ChatHeader({ user, isTyping }: ChatHeaderProps) {
           </h3>
           <div className="text-xs themed-text-2 flex items-center h-4">
             {isTyping ? (
-              <div className="flex items-center gap-1.5 text-brand-500">
+              <div className="flex items-center gap-1.5" style={{ color: "var(--brand-text)" }}>
                 <TypingDots /> <span className="italic">typing...</span>
               </div>
             ) : (
-              user.isOnline ? "Online now" : "Last seen recently"
+              <span style={{ color: user.isOnline ? "var(--success)" : "var(--text-muted)" }}>
+                {statusLine}
+              </span>
             )}
           </div>
         </div>
@@ -40,7 +46,7 @@ export function ChatHeader({ user, isTyping }: ChatHeaderProps) {
         <IconButton size="md" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]" tooltip="Video Call">
           <Video size={20} />
         </IconButton>
-        <div className="w-px h-6 themed-border bg-[var(--border-soft)] mx-1" />
+        <div className="w-px h-6 mx-1" style={{ background: "var(--border)" }} />
         <IconButton size="md" variant="ghost" className="themed-text-2 hover:themed-text" tooltip="More">
           <MoreVertical size={20} />
         </IconButton>

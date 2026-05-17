@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Avatar } from "@/shared/components/Avatar";
 import { Badge } from "@/shared/components/Badge";
@@ -8,6 +8,7 @@ import { ChatPreview } from "../lib/mock-data";
 
 export function RecentChatCard({ chat }: { chat: ChatPreview }) {
   return (
+    <Link href={`/chat/${chat.id}`}>
     <motion.div
       whileHover={{ y: -2, scale: 1.02 }}
       className="themed-surface border themed-border rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[var(--brand-400)] transition-colors shadow-card hover:shadow-elevated"
@@ -33,5 +34,6 @@ export function RecentChatCard({ chat }: { chat: ChatPreview }) {
         </div>
       </div>
     </motion.div>
+    </Link>
   );
 }

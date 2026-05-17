@@ -8,7 +8,8 @@ import { Badge } from "@/shared/components/Badge";
 
 function GroupItem({ group }: { group: GroupPreview }) {
   return (
-    <motion.div 
+    <Link href={`/groups/${group.id}`}>
+    <motion.div
       whileHover={{ x: 4 }}
       className="flex items-center gap-4 py-3 cursor-pointer hover:bg-[var(--row-hover-bg)] rounded-lg px-2 -mx-2 transition-colors"
     >
@@ -34,6 +35,7 @@ function GroupItem({ group }: { group: GroupPreview }) {
         </div>
       </div>
     </motion.div>
+    </Link>
   );
 }
 

@@ -36,9 +36,11 @@ function CallItem({ call }: { call: CallPreview }) {
         </div>
       </div>
 
-      <IconButton size="sm" variant="ghost" className="text-[var(--brand-500)] hover:text-[var(--brand-600)] hover:bg-[var(--row-hover-bg)]">
-        <PhoneCall size={16} />
-      </IconButton>
+      <Link href={`/chat/${call.user.id}`}>
+        <IconButton size="sm" variant="ghost" className="text-[var(--brand-500)] hover:text-[var(--brand-600)] hover:bg-[var(--row-hover-bg)]">
+          <PhoneCall size={16} />
+        </IconButton>
+      </Link>
     </motion.div>
   );
 }

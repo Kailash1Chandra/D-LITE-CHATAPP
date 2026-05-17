@@ -41,13 +41,7 @@ function toMessage(raw: any, currentUserId: string): Message {
     time: new Date(raw.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
     status: raw.status as Message["status"],
     reactions: Object.entries(grouped).map(([emoji, { count, reacted }]) => ({ emoji, count, reacted })),
-    replyTo: raw.reply
-      ? {
-          id: raw.reply.id,
-          content: raw.reply.content || "",
-          sender: raw.reply.sender_id === currentUserId ? "You" : "Peer",
-        }
-      : undefined,
+    replyTo: undefined,
   }
 }
 
@@ -66,12 +60,11 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
       .from("direct_messages")
       .select(`
         id, content, media_url, status, created_at, sender_id, receiver_id, reply_to_id,
-        reply:direct_messages!direct_messages_reply_to_id_fkey(id, content, sender_id),
         reactions:message_reactions(emoji, user_id)
       `)
-      .or(
-        `and(sender_id.eq.${user.id},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${user.id})`
-      )
+      // Use in() filter — works on all PostgREST versions, avoids and() inside or()
+      .in("sender_id", [user.id, peerId])
+      .in("receiver_id", [user.id, peerId])
       .order("created_at", { ascending: true })
 
     if (rawMessages) {

@@ -155,7 +155,11 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
       await supabase.from("message_reactions").delete()
         .eq("message_id", messageId).eq("user_id", userId).eq("emoji", emoji)
     } else {
-      await supabase.from("message_reactions").upsert({ message_id: messageId, user_id: userId, emoji })
+      // ignoreDuplicates: true → INSERT ... ON CONFLICT DO NOTHING
+      // avoids needing an UPDATE RLS policy (upsert without this flag
+      // generates ON CONFLICT DO UPDATE which fails with 403)
+      await supabase.from("message_reactions")
+        .upsert({ message_id: messageId, user_id: userId, emoji }, { ignoreDuplicates: true })
     }
   }, [messages])
 

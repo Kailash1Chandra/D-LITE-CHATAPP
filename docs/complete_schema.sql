@@ -298,8 +298,20 @@ grant execute on function public.get_my_group_ids() to authenticated;
 
 
 -- ── Realtime ──────────────────────────────────────────────────
+--
+-- REPLICA IDENTITY FULL is required for UPDATE events to be delivered
+-- through RLS. Without it Supabase cannot verify the policy on the old
+-- row, so UPDATE events are silently dropped for the subscriber.
+-- This fixes: double-tick not updating live, reactions not refreshing.
+
+alter table public.direct_messages   replica identity full;
+alter table public.message_reactions replica identity full;
+alter table public.group_messages    replica identity full;
+alter table public.calls             replica identity full;
 
 alter publication supabase_realtime add table public.direct_messages;
 alter publication supabase_realtime add table public.message_reactions;
 alter publication supabase_realtime add table public.group_messages;
 alter publication supabase_realtime add table public.profiles;
+-- calls was missing — without this, incoming call realtime events never fire
+alter publication supabase_realtime add table public.calls;

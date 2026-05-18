@@ -86,8 +86,9 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     loadMessages()
 
     const supabase = createClient()
+    // Random suffix prevents "cannot add callbacks after subscribe" on remount
     const channel = supabase
-      .channel(`dm-thread-${peerId}`)
+      .channel(`dm-thread-${peerId}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, loadMessages)
       .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, loadMessages)
       .subscribe()
@@ -130,7 +131,25 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     const supabase = createClient()
 
     const msg = messages.find((m) => m.id === messageId)
-    const alreadyReacted = msg?.reactions?.find((r) => r.emoji === emoji && r.reacted)
+    const alreadyReacted = !!msg?.reactions?.find((r) => r.emoji === emoji && r.reacted)
+
+    // Optimistic update — instant UI, DB confirms via realtime
+    setMessages((prev) => prev.map((m) => {
+      if (m.id !== messageId) return m
+      const existing = m.reactions ?? []
+      if (alreadyReacted) {
+        const updated = existing
+          .map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r)
+          .filter((r) => r.count > 0)
+        return { ...m, reactions: updated }
+      } else {
+        const found = existing.find((r) => r.emoji === emoji)
+        if (found) {
+          return { ...m, reactions: existing.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r) }
+        }
+        return { ...m, reactions: [...existing, { emoji, count: 1, reacted: true }] }
+      }
+    }))
 
     if (alreadyReacted) {
       await supabase.from("message_reactions").delete()

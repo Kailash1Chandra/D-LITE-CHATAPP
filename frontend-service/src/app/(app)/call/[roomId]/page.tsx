@@ -93,6 +93,7 @@ function CallRoom() {
         zp.joinRoom({
           container: containerRef.current,
           scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
+          showPreJoinView: false,
           showScreenSharingButton: callType !== "audio",
           turnOnCameraWhenJoining: callType !== "audio",
           turnOnMicrophoneWhenJoining: true,

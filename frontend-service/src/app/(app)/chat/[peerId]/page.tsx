@@ -85,7 +85,7 @@ export default function ChatPage() {
     content: m.content,
     mediaUrl: m.mediaUrl,
     time: m.time,
-    status: (m.status === "delivered" ? "sent" : m.status === "failed" ? "sending" : m.status) as ThreadMessage["status"],
+    status: (m.status === "failed" ? "sending" : m.status ?? "sent") as ThreadMessage["status"],
     reactions: m.reactions?.map((r) => ({ emoji: r.emoji, count: r.count, active: r.reacted })),
     onReact: (emoji: string) => addReaction(m.id, emoji),
     onDelete: m.isOwn ? (id: string) => deleteMessage(id) : undefined,

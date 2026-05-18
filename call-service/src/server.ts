@@ -9,23 +9,19 @@ const app = express();
 
 const _originsEnv = process.env.ALLOWED_ORIGINS ?? '';
 const allowedOrigins = _originsEnv.split(',').map(o => o.trim()).filter(Boolean);
-// If ALLOWED_ORIGINS not set, allow all origins (open API — token is the auth)
 app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true, credentials: false }));
 app.use(express.json());
 
 
 // ── ZEGOCLOUD Kit Token generation ───────────────────────────────────────────
 //
-// Mirrors ZegoUIKitPrebuilt.generateKitTokenForTest but runs SERVER-SIDE so
-// ZEGO_SERVER_SECRET is never exposed to the browser.
+// Replicates ZegoUIKitPrebuilt.generateKitTokenForTest exactly:
+//   1. AES-CBC encrypt { app_id, user_id, nonce, ctime, expire } using
+//      serverSecret (UTF-8 bytes) as key and a random 16-char IV
+//   2. Pack into binary: [0×4][expire×4][ivLen×2][iv×16][ctLen×2][ciphertext]
+//   3. Token = "04" + base64(binary) + "#" + base64(JSON{userID,roomID,userName,appID})
 //
-// Token format (from ZEGOCLOUD open-source SDK):
-//   "04" + Base64(JSON payload)
-//   signature = MD5(`${appId}${roomId}${userId}${serverSecret}`)
-
-function md5(str: string): string {
-  return crypto.createHash('md5').update(str).digest('hex');
-}
+// This matches the format ZegoUIKitPrebuilt.create() validates on the client.
 
 function generateKitToken(
   appId: number,
@@ -33,21 +29,56 @@ function generateKitToken(
   roomId: string,
   userId: string,
   userName: string,
-  ttlSeconds = 3600,
+  ttlSeconds = 7200,
 ): string {
   const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    app_id: appId,
-    room_id: roomId,
-    user_id: userId,
-    user_name: userName,
-    privilege: { 1: 1, 2: 1 },
-    nonce: String(10000000 + Math.floor(Math.random() * 89999999)),
-    signature: md5(`${appId}${roomId}${userId}${serverSecret}`),
-    ctime: now,
-    expire_time: now + ttlSeconds,
-  };
-  return '04' + Buffer.from(JSON.stringify(payload)).toString('base64');
+  const nonce = Math.floor(Math.random() * 2147483647);
+  const expire = now + ttlSeconds;
+
+  const payload = JSON.stringify({ app_id: appId, user_id: userId, nonce, ctime: now, expire });
+
+  // 16-char random IV (same logic as SDK)
+  let iv = Math.random().toString().substring(2, 18);
+  while (iv.length < 16) iv += iv.substring(0, 16 - iv.length);
+  const ivBuf = Buffer.from(iv, 'utf8'); // exactly 16 bytes
+
+  // Key: UTF-8 bytes of serverSecret → determine AES variant by length
+  const rawKey = Buffer.from(serverSecret, 'utf8');
+  let keyBuf: Buffer;
+  let algo: string;
+  if (rawKey.length >= 32) {
+    keyBuf = rawKey.slice(0, 32); algo = 'aes-256-cbc';
+  } else if (rawKey.length >= 24) {
+    keyBuf = rawKey.slice(0, 24); algo = 'aes-192-cbc';
+  } else {
+    // pad to 16 bytes
+    keyBuf = Buffer.concat([rawKey, Buffer.alloc(16 - rawKey.length)]);
+    algo = 'aes-128-cbc';
+  }
+
+  const cipher = crypto.createCipheriv(algo, keyBuf, ivBuf);
+  const ciphertext = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]);
+
+  // Binary header (28 bytes) + ciphertext
+  const bin = Buffer.alloc(28 + ciphertext.length);
+  bin.fill(0, 0, 4);                        // bytes 0-3: zeros
+  bin.writeInt32BE(expire, 4);              // bytes 4-7: expire big-endian
+  bin.writeUInt8(iv.length >> 8, 8);        // bytes 8-9: IV len big-endian uint16
+  bin.writeUInt8(iv.length & 0xff, 9);
+  ivBuf.copy(bin, 10);                      // bytes 10-25: IV
+  bin.writeUInt8(ciphertext.length >> 8, 26); // bytes 26-27: ct len big-endian uint16
+  bin.writeUInt8(ciphertext.length & 0xff, 27);
+  ciphertext.copy(bin, 28);                // bytes 28+: ciphertext
+
+  const binaryPart = '04' + bin.toString('base64');
+  const metaPart = Buffer.from(JSON.stringify({
+    userID: userId,
+    roomID: roomId,
+    userName: encodeURIComponent(userName),
+    appID: appId,
+  })).toString('base64');
+
+  return binaryPart + '#' + metaPart;
 }
 
 
@@ -70,7 +101,7 @@ app.get('/token', (req: Request, res: Response) => {
   const serverSecret = process.env.ZEGO_SERVER_SECRET ?? '';
 
   if (!appId || !serverSecret) {
-    res.status(503).json({ error: 'ZEGOCLOUD credentials are not configured on the server' });
+    res.status(503).json({ error: 'ZEGOCLOUD credentials not configured' });
     return;
   }
 

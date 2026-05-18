@@ -20,6 +20,8 @@ interface UseGroupMessagesReturn {
   members: (User & { role: "owner" | "admin" | "mod" | "member" })[]
   messages: GroupMessage[]
   send: (content: string, mediaUrl?: string) => void
+  deleteMessage: (id: string) => void
+  editMessage: (id: string, newContent: string) => void
   loading: boolean
 }
 
@@ -118,5 +120,21 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     })
   }, [groupId])
 
-  return { group, members, messages, send, loading }
+  const deleteMessage = React.useCallback(async (id: string) => {
+    const userId = userIdRef.current
+    if (!userId) return
+    setMessages((prev) => prev.filter((m) => m.id !== id))
+    const supabase = createClient()
+    await supabase.from("group_messages").delete().eq("id", id).eq("sender_id", userId)
+  }, [])
+
+  const editMessage = React.useCallback(async (id: string, newContent: string) => {
+    const userId = userIdRef.current
+    if (!userId) return
+    setMessages((prev) => prev.map((m) => m.id === id ? { ...m, content: newContent } : m))
+    const supabase = createClient()
+    await supabase.from("group_messages").update({ content: newContent }).eq("id", id).eq("sender_id", userId)
+  }, [])
+
+  return { group, members, messages, send, deleteMessage, editMessage, loading }
 }

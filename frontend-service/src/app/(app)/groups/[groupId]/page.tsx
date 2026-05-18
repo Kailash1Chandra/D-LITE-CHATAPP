@@ -10,7 +10,7 @@ import { useGroupMessages } from "@/features/group/hooks/use-group-messages";
 
 export default function GroupChatPage() {
   const { groupId } = useParams<{ groupId: string }>();
-  const { group, members, messages, send, loading } = useGroupMessages(groupId);
+  const { group, members, messages, send, deleteMessage, editMessage, loading } = useGroupMessages(groupId);
 
   if (loading || !group) {
     return (
@@ -33,13 +33,26 @@ export default function GroupChatPage() {
               messages.map((msg) => (
                 <React.Fragment key={msg.id}>
                   {msg.dateStr && (
-                    <div className="flex justify-center my-6">
-                      <span className="bg-gray-100 text-gray-500 text-xs font-medium px-3 py-1 rounded-full shadow-sm">
+                    <div className="flex items-center gap-3 my-6">
+                      <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+                      <span
+                        className="text-[11px] font-semibold px-3 py-1 rounded-full"
+                        style={{
+                          background: "var(--surface-2, var(--surface))",
+                          color: "var(--text-muted)",
+                          border: "1px solid var(--border)",
+                        }}
+                      >
                         {msg.dateStr}
                       </span>
+                      <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
                     </div>
                   )}
-                  <GroupMessageBubble {...msg} />
+                  <GroupMessageBubble
+                    {...msg}
+                    onDelete={msg.direction === "out" ? (id) => deleteMessage(id) : undefined}
+                    onEdit={msg.direction === "out" ? (id, text) => editMessage(id, text) : undefined}
+                  />
                 </React.Fragment>
               ))
             )}

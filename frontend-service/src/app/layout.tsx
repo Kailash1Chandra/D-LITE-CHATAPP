@@ -40,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
@@ -53,7 +53,7 @@ export default function RootLayout({
           })();
         `}} />
       </head>
-      <body className="min-h-full flex flex-col font-sans">
+      <body className={`${inter.className} min-h-full flex flex-col`}>
         <ThemeProvider>
           <ToastProvider>
             {children}

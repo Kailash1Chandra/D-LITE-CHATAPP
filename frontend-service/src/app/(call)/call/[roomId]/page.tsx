@@ -158,7 +158,11 @@ function CallRoom() {
           },
           onLeaveRoom: () => {
             markCallDone(roomId);
-            router.back();
+            // Hard navigate to flush ZEGOCLOUD's WebSocket/WebAssembly from memory.
+            // router.back() is a soft nav — ZEGO module stays loaded and keeps
+            // trying to reconnect, causing "setting_online_undefined" noise on
+            // subsequent pages.
+            window.location.href = document.referrer || "/dashboard";
           },
         });
       } catch (e: any) {
@@ -176,7 +180,7 @@ function CallRoom() {
   function leave() {
     markCallDone(roomId);
     if (zpRef.current) { try { zpRef.current.destroy(); } catch {} zpRef.current = null; }
-    router.back();
+    window.location.href = document.referrer || "/dashboard";
   }
 
   return (

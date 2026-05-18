@@ -13,75 +13,92 @@ export interface IncomingCall {
   }
 }
 
+function parseCaller(row: any): IncomingCall | null {
+  const c = row.caller ?? row
+  if (!c) return null
+  const name: string = c.display_name || c.username || "Someone"
+  return {
+    id: row.id,
+    type: row.type === "video" ? "video" : "audio",
+    caller: {
+      id: c.id,
+      name,
+      initials: name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+    },
+  }
+}
+
 export function useIncomingCall() {
   const [incomingCall, setIncomingCall] = React.useState<IncomingCall | null>(null)
-  const userIdRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    let cancelled = false
 
     async function setup() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      userIdRef.current = user.id
+      if (!user || cancelled) return
 
-      // Pick up any call that was already ringing when the page loaded
-      const { data } = await supabase
+      const userId = user.id   // captured in closure — no ref race condition
+
+      // Check for a call that was already ringing before this page loaded
+      const { data: existing } = await supabase
         .from("calls")
-        .select(`id, type, status, caller:profiles!calls_caller_id_fkey(id, display_name, username)`)
-        .eq("receiver_id", user.id)
+        .select("id, type, status, caller:profiles!calls_caller_id_fkey(id, display_name, username)")
+        .eq("receiver_id", userId)
         .eq("status", "ringing")
         .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle()
 
-      if (data) parseAndSet(data)
-    }
+      if (existing && !cancelled) {
+        const parsed = parseCaller({ ...existing, caller: existing.caller })
+        if (parsed) setIncomingCall(parsed)
+      }
 
-    function parseAndSet(row: any) {
-      const c = row.caller
-      if (!c) return
-      const name: string = c.display_name || c.username || "Someone"
-      setIncomingCall({
-        id: row.id,
-        type: row.type === "video" ? "video" : "audio",
-        caller: {
-          id: c.id,
-          name,
-          initials: name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
-        },
-      })
+      // Subscribe AFTER userId is known — this was the root bug.
+      // Previously the channel was set up synchronously before setup() resolved,
+      // so userIdRef.current was null when INSERT events arrived and every event
+      // was dropped by the receiver_id !== null check.
+      channel = supabase
+        .channel(`incoming-calls-${Math.random().toString(36).slice(2)}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "calls" },
+          async (payload) => {
+            const row = payload.new as any
+            if (row.receiver_id !== userId) return
+            if (row.status !== "ringing") return
+
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("id, display_name, username")
+              .eq("id", row.caller_id)
+              .single()
+
+            if (profile && !cancelled) {
+              const parsed = parseCaller({ ...row, caller: profile })
+              if (parsed) setIncomingCall(parsed)
+            }
+          }
+        )
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "calls" },
+          (payload) => {
+            const row = payload.new as any
+            setIncomingCall((prev) => {
+              if (prev && prev.id === row.id && row.status !== "ringing") return null
+              return prev
+            })
+          }
+        )
+        .subscribe()
     }
 
     setup()
 
-    const channel = supabase
-      .channel(`incoming-calls-${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "calls" }, async (payload) => {
-        const row = payload.new as any
-        if (row.receiver_id !== userIdRef.current) return
-        if (row.status !== "ringing") return
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, display_name, username")
-          .eq("id", row.caller_id)
-          .single()
-
-        if (profile) {
-          parseAndSet({ ...row, caller: profile })
-        }
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "calls" }, (payload) => {
-        const row = payload.new as any
-        setIncomingCall((prev) => {
-          if (prev && prev.id === row.id && row.status !== "ringing") return null
-          return prev
-        })
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      cancelled = true
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [])
 
   async function accept(): Promise<IncomingCall | null> {

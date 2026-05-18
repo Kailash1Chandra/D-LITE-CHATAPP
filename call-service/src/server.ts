@@ -8,8 +8,9 @@ dotenv.config();
 const app = express();
 
 const _originsEnv = process.env.ALLOWED_ORIGINS ?? '';
-const allowedOrigins = _originsEnv ? _originsEnv.split(',').map(o => o.trim()).filter(Boolean) : [];
-app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false, credentials: false }));
+const allowedOrigins = _originsEnv.split(',').map(o => o.trim()).filter(Boolean);
+// If ALLOWED_ORIGINS not set, allow all origins (open API — token is the auth)
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true, credentials: false }));
 app.use(express.json());
 
 

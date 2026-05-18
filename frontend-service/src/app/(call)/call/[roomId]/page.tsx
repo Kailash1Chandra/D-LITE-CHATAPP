@@ -123,9 +123,10 @@ function CallRoom() {
         let kitToken: string;
         const svcResult = await fetchToken(roomId, userId, userName);
         if (svcResult) {
-          kitToken = ZegoUIKitPrebuilt.generateKitTokenForProduction(
-            svcResult.appId, svcResult.token, roomId, userId, userName,
-          );
+          // call-service already returns a complete kit token ("04" + base64 payload)
+          // — use it directly, do NOT pass through generateKitTokenForProduction
+          // which would double-wrap it and produce an invalid token
+          kitToken = svcResult.token;
         } else {
           const appId = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID ?? 0);
           const secret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET ?? "";

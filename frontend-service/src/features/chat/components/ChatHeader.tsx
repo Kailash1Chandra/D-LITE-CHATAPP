@@ -6,6 +6,7 @@ import { Avatar } from "@/shared/components/Avatar";
 import { IconButton } from "@/shared/components/IconButton";
 import { TypingDots } from "@/shared/components/TypingDots";
 import { User } from "@/features/dashboard/lib/mock-data";
+import { createClient } from "@/core/auth/supabase-client";
 
 export interface ChatHeaderProps {
   user: User;
@@ -17,9 +18,23 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
   const router = useRouter();
   const statusLine = isTyping ? null : (subText ?? (user.isOnline ? "Online now" : "Last seen recently"));
 
-  function startCall(type: "audio" | "video") {
-    const roomId = `dm-${user.id}`;
-    router.push(`/call/${roomId}?type=${type}&peerId=${user.id}`);
+  async function startCall(type: "audio" | "video") {
+    const supabase = createClient();
+    const { data: { user: me } } = await supabase.auth.getUser();
+    if (!me) return;
+
+    const { data, error } = await supabase
+      .from("calls")
+      .insert({ caller_id: me.id, receiver_id: user.id, type, status: "ringing" })
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      // fallback: navigate anyway with a generated room
+      router.push(`/call/dm-${user.id}?type=${type}`);
+      return;
+    }
+    router.push(`/call/${data.id}?type=${type}`);
   }
 
   return (

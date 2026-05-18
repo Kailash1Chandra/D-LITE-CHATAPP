@@ -5,8 +5,19 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, PhoneOff } from "lucide-react";
 import { createClient } from "@/core/auth/supabase-client";
 
-const ZEGO_APP_ID     = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID ?? 0);
-const ZEGO_SECRET     = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET ?? "";
+const ZEGO_APP_ID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID ?? 0);
+const ZEGO_SECRET = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET ?? "";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function updateCallStatus(roomId: string, status: string, endedAt?: boolean) {
+  if (!UUID_RE.test(roomId)) return;
+  const { createClient } = await import("@/core/auth/supabase-client");
+  const supabase = createClient();
+  const patch: Record<string, unknown> = { status };
+  if (endedAt) patch.ended_at = new Date().toISOString();
+  await supabase.from("calls").update(patch).eq("id", roomId);
+}
 
 function CallRoom() {
   const { roomId } = useParams() as { roomId: string };
@@ -46,17 +57,21 @@ function CallRoom() {
 
         const callType = searchParams.get("type");
 
+        // Mark call as ongoing when joining
+        await updateCallStatus(roomId, "ongoing");
+
         zp.joinRoom({
           container: containerRef.current,
           scenario: {
-            mode: callType === "audio"
-              ? ZegoUIKitPrebuilt.OneONoneCall
-              : ZegoUIKitPrebuilt.OneONoneCall,
+            mode: ZegoUIKitPrebuilt.OneONoneCall,
           },
           showScreenSharingButton: callType !== "audio",
           turnOnCameraWhenJoining: callType !== "audio",
           turnOnMicrophoneWhenJoining: true,
-          onLeaveRoom: () => router.back(),
+          onLeaveRoom: async () => {
+            await updateCallStatus(roomId, "completed", true);
+            router.back();
+          },
         });
       } catch (e: any) {
         setErrorMsg(e?.message ?? "Failed to start call");

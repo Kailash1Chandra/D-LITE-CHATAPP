@@ -1,5 +1,6 @@
 import { IconRail } from "@/shared/components/IconRail";
 import { getUser, getInitials } from "@/core/auth/get-user";
+import { CallListener } from "@/features/calls/components/CallListener";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getUser();
@@ -12,6 +13,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 h-full overflow-y-auto">
         {children}
       </main>
+      <CallListener />
     </div>
   );
 }

@@ -10,103 +10,157 @@ const ZEGO_SECRET = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET ?? "";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function updateCallStatus(roomId: string, status: string, endedAt?: boolean) {
+async function markCallDone(roomId: string) {
   if (!UUID_RE.test(roomId)) return;
-  const { createClient } = await import("@/core/auth/supabase-client");
-  const supabase = createClient();
-  const patch: Record<string, unknown> = { status };
-  if (endedAt) patch.ended_at = new Date().toISOString();
-  await supabase.from("calls").update(patch).eq("id", roomId);
+  try {
+    const supabase = createClient();
+    await supabase
+      .from("calls")
+      .update({ status: "completed", ended_at: new Date().toISOString() })
+      .eq("id", roomId);
+  } catch {}
 }
 
 function CallRoom() {
   const { roomId } = useParams() as { roomId: string };
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  // The container div is ALWAYS in the DOM so ZEGOCLOUD can render into it.
+  // We overlay loading/error states on top instead of hiding the container.
   const containerRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const zpRef = useRef<any>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    if (!containerRef.current || !roomId) return;
-    let zp: any = null;
+    if (!roomId) return;
+    let cancelled = false;
 
     async function init() {
       try {
         if (!ZEGO_APP_ID || !ZEGO_SECRET) {
-          setErrorMsg("Zego credentials not configured. Set NEXT_PUBLIC_ZEGO_APP_ID and NEXT_PUBLIC_ZEGO_SERVER_SECRET in Vercel.");
-          setStatus("error");
+          setErrorMsg(
+            "ZEGOCLOUD credentials missing — set NEXT_PUBLIC_ZEGO_APP_ID and NEXT_PUBLIC_ZEGO_SERVER_SECRET."
+          );
+          setPhase("error");
           return;
         }
 
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setErrorMsg("Not authenticated"); setStatus("error"); return; }
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          setErrorMsg("Not authenticated");
+          setPhase("error");
+          return;
+        }
 
-        const userId   = user.id;
-        const userName = user.user_metadata?.full_name || user.user_metadata?.username || "User";
+        const userId = user.id;
+        const userName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.username ||
+          "User";
 
-        const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
-
-        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-          ZEGO_APP_ID, ZEGO_SECRET, roomId, userId, userName
+        const { ZegoUIKitPrebuilt } = await import(
+          "@zegocloud/zego-uikit-prebuilt"
         );
 
-        zp = ZegoUIKitPrebuilt.create(kitToken);
-        setStatus("ready");
+        if (cancelled) return;
+
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+          ZEGO_APP_ID,
+          ZEGO_SECRET,
+          roomId,
+          userId,
+          userName
+        );
+
+        const zp = ZegoUIKitPrebuilt.create(kitToken);
+        zpRef.current = zp;
+
+        // Reveal the container — it already has full dimensions in the DOM
+        setPhase("ready");
+
+        // Wait one frame so the overlay disappears and the container is painted
+        // before ZEGOCLOUD tries to measure it.
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+        if (cancelled) return;
 
         const callType = searchParams.get("type");
 
-        // Mark call as ongoing when joining
-        await updateCallStatus(roomId, "ongoing");
-
         zp.joinRoom({
           container: containerRef.current,
-          scenario: {
-            mode: ZegoUIKitPrebuilt.OneONoneCall,
-          },
+          scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
           showScreenSharingButton: callType !== "audio",
           turnOnCameraWhenJoining: callType !== "audio",
           turnOnMicrophoneWhenJoining: true,
-          onLeaveRoom: async () => {
-            await updateCallStatus(roomId, "completed", true);
+          onLeaveRoom: () => {
+            markCallDone(roomId);
             router.back();
           },
         });
       } catch (e: any) {
-        setErrorMsg(e?.message ?? "Failed to start call");
-        setStatus("error");
+        if (!cancelled) {
+          setErrorMsg(e?.message ?? "Failed to start call");
+          setPhase("error");
+        }
       }
     }
 
     init();
-    return () => { if (zp) { try { zp.destroy(); } catch {} } };
+
+    return () => {
+      cancelled = true;
+      if (zpRef.current) {
+        try {
+          zpRef.current.destroy();
+        } catch {}
+        zpRef.current = null;
+      }
+    };
   }, [roomId, router, searchParams]);
 
   return (
-    <div className="flex h-screen w-full themed-canvas overflow-hidden items-center justify-center">
-      {status === "loading" && (
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 size={32} className="animate-spin" style={{ color: "var(--brand-text)" }} />
+    <div className="relative h-screen w-full overflow-hidden themed-canvas">
+      {/* ZEGOCLOUD renders into this — always in DOM, full size */}
+      <div ref={containerRef} className="absolute inset-0" />
+
+      {/* Loading overlay */}
+      {phase === "loading" && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4"
+          style={{ background: "var(--canvas-solid, var(--canvas))" }}>
+          <Loader2
+            size={36}
+            className="animate-spin"
+            style={{ color: "var(--brand-text)" }}
+          />
           <p className="text-sm themed-text-3">Connecting…</p>
         </div>
       )}
-      {status === "error" && (
-        <div className="flex flex-col items-center gap-4 text-center max-w-sm px-4">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(239,68,68,0.1)" }}>
+
+      {/* Error overlay */}
+      {phase === "error" && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 text-center px-8"
+          style={{ background: "var(--canvas-solid, var(--canvas))" }}>
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(239,68,68,0.1)" }}
+          >
             <PhoneOff size={28} style={{ color: "var(--danger)" }} />
           </div>
           <p className="font-bold themed-text">Could not start call</p>
-          <p className="text-sm themed-text-3">{errorMsg}</p>
-          <button onClick={() => router.back()}
+          <p className="text-sm themed-text-3 max-w-sm">{errorMsg}</p>
+          <button
+            onClick={() => router.back()}
             className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
-            style={{ background: "var(--grad-brand)" }}>
+            style={{ background: "var(--grad-brand)" }}
+          >
             Go back
           </button>
         </div>
       )}
-      <div ref={containerRef} className="w-full h-full"
-        style={{ display: status === "ready" ? "block" : "none" }} />
     </div>
   );
 }

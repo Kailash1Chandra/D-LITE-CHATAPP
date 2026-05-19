@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import React from "react";
 import { ChatHeader } from "@/features/chat/components/ChatHeader";
 import { MessageBubble } from "@/features/chat/components/MessageBubble";
@@ -121,6 +121,7 @@ export default function ChatPage() {
     });
   }, [peerId]);
 
+  const bottomRef = useRef<HTMLDivElement>(null);
   const peerOnline = isOnline(peerId);
   const peerUser = { ...peer, isOnline: peerOnline };
   const subText = peerOnline ? "Online now" : formatLastSeen(peer.lastSeen);
@@ -150,6 +151,12 @@ export default function ChatPage() {
     })),
   ].sort((a, b) => a.ts - b.ts);
 
+  // Scroll to bottom only when new items arrive, not on every render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [threadItems.length]);
+
   return (
     <div className="flex flex-col h-full themed-canvas relative z-0">
       <ChatHeader user={peerUser} isTyping={false} subText={subText} />
@@ -158,7 +165,7 @@ export default function ChatPage() {
           Loading messages…
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth custom-scrollbar" ref={(el) => el?.scrollTo(0, el.scrollHeight)}>
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth custom-scrollbar">
           {threadItems.map(item =>
             item.kind === "message" ? (
               <MessageBubble key={item.data.id} {...item.data} />
@@ -173,7 +180,7 @@ export default function ChatPage() {
               />
             )
           )}
-          <div className="h-4" />
+          <div ref={bottomRef} className="h-4" />
         </div>
       )}
       <Composer onSend={(text, mediaUrl) => send(text, mediaUrl)} />

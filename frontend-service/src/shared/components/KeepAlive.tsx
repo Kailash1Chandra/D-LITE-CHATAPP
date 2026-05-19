@@ -18,7 +18,9 @@ export function KeepAlive() {
     function ping() {
       SERVICES.forEach(url => {
         const base = url.replace(/^wss?:\/\//, "https://").replace(/\/$/, "");
-        fetch(`${base}/health`, { method: "GET", cache: "no-store" }).catch(() => {});
+        // no-cors: we only care about keeping the service alive, not reading
+        // the response — avoids CORS header requirement on health endpoints
+        fetch(`${base}/health`, { method: "GET", cache: "no-store", mode: "no-cors" }).catch(() => {});
       });
     }
 

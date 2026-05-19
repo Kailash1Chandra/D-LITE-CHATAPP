@@ -2,8 +2,11 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import React from "react";
 import { ChatHeader } from "@/features/chat/components/ChatHeader";
-import { MessageThread, ThreadMessage } from "@/features/chat/components/MessageThread";
+import { MessageBubble } from "@/features/chat/components/MessageBubble";
+import { ThreadMessage } from "@/features/chat/components/MessageThread";
+import { CallBubble } from "@/features/chat/components/CallBubble";
 import { Composer } from "@/features/chat/components/Composer";
 import { useChatMessages } from "@/features/chat/hooks/use-chat-messages";
 import { usePresence } from "@/features/chat/hooks/use-presence";
@@ -16,6 +19,15 @@ interface PeerUser {
   isOnline: boolean;
   avatarUrl?: string;
   lastSeen?: string;
+}
+
+interface CallRecord {
+  id: string;
+  type: "audio" | "video";
+  status: string;
+  startedAt: string;
+  endedAt: string | null;
+  isOwn: boolean;
 }
 
 function getInitials(name: string) {
@@ -33,18 +45,35 @@ function formatLastSeen(iso: string | null | undefined): string {
   return `Last seen ${Math.floor(hrs / 24)}d ago`;
 }
 
+function formatDuration(startedAt: string, endedAt: string | null): string | undefined {
+  if (!endedAt) return undefined;
+  const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+  if (ms < 1000) return undefined;
+  const secs = Math.floor(ms / 1000);
+  const mins = Math.floor(secs / 60);
+  const rem = secs % 60;
+  return `${mins}:${rem.toString().padStart(2, "0")}`;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+}
+
+// A thread item can be a message OR a call record
+type ThreadItem =
+  | { kind: "message"; ts: number; data: ThreadMessage }
+  | { kind: "call"; ts: number; data: CallRecord };
+
 export default function ChatPage() {
   const { peerId } = useParams<{ peerId: string }>();
   const { messages, send, addReaction, deleteMessage, editMessage, loading } = useChatMessages(peerId);
   const { isOnline } = usePresence();
 
-  const [peer, setPeer] = useState<PeerUser>({
-    id: peerId,
-    name: "Loading…",
-    initials: "…",
-    isOnline: false,
-  });
+  const [peer, setPeer] = useState<PeerUser>({ id: peerId, name: "Loading…", initials: "…", isOnline: false });
+  const [calls, setCalls] = useState<CallRecord[]>([]);
+  const [myId, setMyId] = useState<string | null>(null);
 
+  // Load peer profile
   useEffect(() => {
     if (!peerId) return;
     const supabase = createClient();
@@ -57,40 +86,69 @@ export default function ChatPage() {
         if (!data) return;
         const d = data as any;
         const name = d.display_name || d.username || "Unknown";
-        setPeer({
-          id: d.id,
-          name,
-          initials: getInitials(name),
-          isOnline: isOnline(d.id) || d.status === "Online",
-          avatarUrl: d.avatar_url ?? undefined,
-          lastSeen: d.last_seen_at,
-        });
+        setPeer({ id: d.id, name, initials: getInitials(name), isOnline: isOnline(d.id) || d.status === "Online", avatarUrl: d.avatar_url ?? undefined, lastSeen: d.last_seen_at });
       });
   }, [peerId, isOnline]);
 
-  // Sync live presence into peer state
+  // Load call history between me and peer
+  useEffect(() => {
+    if (!peerId) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      setMyId(user.id);
+      supabase
+        .from("calls")
+        .select("id, type, status, started_at, ended_at, caller_id, receiver_id")
+        .or(`caller_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order("started_at", { ascending: true })
+        .then(({ data }) => {
+          if (!data) return;
+          // Only calls between me and this peer
+          const filtered = (data as any[]).filter(
+            r => (r.caller_id === user.id && r.receiver_id === peerId) ||
+                 (r.receiver_id === user.id && r.caller_id === peerId)
+          );
+          setCalls(filtered.map(r => ({
+            id: r.id,
+            type: r.type === "video" ? "video" : "audio",
+            status: r.status,
+            startedAt: r.started_at,
+            endedAt: r.ended_at,
+            isOwn: r.caller_id === user.id,
+          })));
+        });
+    });
+  }, [peerId]);
+
   const peerOnline = isOnline(peerId);
-  const peerUser = {
-    ...peer,
-    isOnline: peerOnline,
-  };
+  const peerUser = { ...peer, isOnline: peerOnline };
+  const subText = peerOnline ? "Online now" : formatLastSeen(peer.lastSeen);
 
-  const subText = peerOnline
-    ? "Online now"
-    : formatLastSeen(peer.lastSeen);
-
-  const threadMessages: ThreadMessage[] = messages.map((m) => ({
-    id: m.id,
-    direction: m.isOwn ? "out" : "in",
-    content: m.content,
-    mediaUrl: m.mediaUrl,
-    time: m.time,
-    status: (m.status === "failed" ? "sending" : m.status ?? "sent") as ThreadMessage["status"],
-    reactions: m.reactions?.map((r) => ({ emoji: r.emoji, count: r.count, active: r.reacted })),
-    onReact: (emoji: string) => addReaction(m.id, emoji),
-    onDelete: m.isOwn ? (id: string) => deleteMessage(id) : undefined,
-    onEdit: m.isOwn ? (id: string, text: string) => editMessage(id, text) : undefined,
-  }));
+  // Build merged thread (messages + calls), sorted by timestamp
+  const threadItems: ThreadItem[] = [
+    ...messages.map((m): ThreadItem => ({
+      kind: "message",
+      ts: new Date(m.time).getTime() || 0,
+      data: {
+        id: m.id,
+        direction: m.isOwn ? "out" : "in",
+        content: m.content,
+        mediaUrl: m.mediaUrl,
+        time: m.time,
+        status: (m.status === "failed" ? "sending" : m.status ?? "sent") as ThreadMessage["status"],
+        reactions: m.reactions?.map(r => ({ emoji: r.emoji, count: r.count, active: r.reacted })),
+        onReact: (emoji: string) => addReaction(m.id, emoji),
+        onDelete: m.isOwn ? (id: string) => deleteMessage(id) : undefined,
+        onEdit: m.isOwn ? (id: string, text: string) => editMessage(id, text) : undefined,
+      },
+    })),
+    ...calls.map((c): ThreadItem => ({
+      kind: "call",
+      ts: new Date(c.startedAt).getTime(),
+      data: c,
+    })),
+  ].sort((a, b) => a.ts - b.ts);
 
   return (
     <div className="flex flex-col h-full themed-canvas relative z-0">
@@ -100,7 +158,23 @@ export default function ChatPage() {
           Loading messages…
         </div>
       ) : (
-        <MessageThread messages={threadMessages} />
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth custom-scrollbar" ref={(el) => el?.scrollTo(0, el.scrollHeight)}>
+          {threadItems.map(item =>
+            item.kind === "message" ? (
+              <MessageBubble key={item.data.id} {...item.data} />
+            ) : (
+              <CallBubble
+                key={item.data.id}
+                type={item.data.type}
+                status={item.data.status}
+                duration={formatDuration(item.data.startedAt, item.data.endedAt)}
+                time={formatTime(item.data.startedAt)}
+                isOwn={item.data.isOwn}
+              />
+            )
+          )}
+          <div className="h-4" />
+        </div>
       )}
       <Composer onSend={(text, mediaUrl) => send(text, mediaUrl)} />
     </div>

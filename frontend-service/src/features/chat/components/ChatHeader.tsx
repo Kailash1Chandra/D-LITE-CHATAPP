@@ -34,7 +34,7 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
       router.push(`/call/dm-${user.id}?type=${type}`);
       return;
     }
-    router.push(`/call/${data.id}?type=${type}`);
+    router.push(`/call/${data.id}?type=${type}&peerId=${user.id}`);
   }
 
   return (

@@ -183,17 +183,19 @@ export function useWebRTCCall(
   const toggleMic = useCallback(() => {
     const stream = localStreamRef.current;
     if (!stream) return;
-    const enabled = !muted;
-    stream.getAudioTracks().forEach(t => { t.enabled = enabled; });
-    setMuted(!muted);
+    // muted=false → about to mute → disable tracks (enabled=false)
+    const nowMuted = !muted;
+    stream.getAudioTracks().forEach(t => { t.enabled = !nowMuted; });
+    setMuted(nowMuted);
   }, [muted]);
 
   const toggleCam = useCallback(() => {
     const stream = localStreamRef.current;
     if (!stream) return;
-    const enabled = !camOff;
-    stream.getVideoTracks().forEach(t => { t.enabled = enabled; });
-    setCamOff(!camOff);
+    // camOff=false → about to turn off → disable tracks (enabled=false)
+    const nowOff = !camOff;
+    stream.getVideoTracks().forEach(t => { t.enabled = !nowOff; });
+    setCamOff(nowOff);
   }, [camOff]);
 
   const shareScreen = useCallback(async () => {

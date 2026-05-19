@@ -47,9 +47,12 @@ function CallRoom() {
 
   const timer = useCallTimer(false);
 
+  const peerId = searchParams.get("peerId");
+  const returnUrl = peerId ? `/chat/${peerId}` : "/dashboard";
+
   function leave() {
     markCallDone(roomId);
-    window.location.href = document.referrer || "/dashboard";
+    window.location.href = returnUrl;
   }
 
   const {

@@ -76,26 +76,61 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     setLoading(false)
 
     // Mark received messages as read
-    await supabase
+    const { data: updated } = await supabase
       .from("direct_messages")
       .update({ status: "read" })
       .eq("sender_id", peerId)
       .eq("receiver_id", user.id)
       .neq("status", "read")
+      .select("id")
+
+    // Broadcast read receipt so sender sees double tick instantly —
+    // works WITHOUT REPLICA IDENTITY FULL (which UPDATE events require)
+    if (updated && updated.length > 0) {
+      supabase
+        .channel(`read-receipt-${[user.id, peerId].sort().join("-")}`)
+        .send({ type: "broadcast", event: "read", payload: { readBy: user.id } })
+        .catch(() => {})
+    }
   }, [peerId])
 
   React.useEffect(() => {
     loadMessages()
 
     const supabase = createClient()
-    // Random suffix prevents "cannot add callbacks after subscribe" on remount
-    const channel = supabase
-      .channel(`dm-thread-${peerId}-${Math.random().toString(36).slice(2)}`)
+    const suffix = Math.random().toString(36).slice(2)
+
+    // Postgres changes — new messages + reactions
+    const msgChannel = supabase
+      .channel(`dm-thread-${peerId}-${suffix}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, loadMessages)
       .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, loadMessages)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Broadcast channel for read receipts — lets sender see double tick
+    // instantly without REPLICA IDENTITY FULL on direct_messages
+    const userId = userIdRef.current
+    const receiptChannelName = userId
+      ? `read-receipt-${[userId, peerId].sort().join("-")}`
+      : `read-receipt-${peerId}-${suffix}`
+    const receiptChannel = supabase
+      .channel(receiptChannelName)
+      .on("broadcast", { event: "read" }, ({ payload }) => {
+        // Peer read our messages → flip all our sent messages to "read"
+        if (payload.readBy === peerId) {
+          setMessages(prev =>
+            prev.map(m =>
+              m.isOwn && m.status !== "read" ? { ...m, status: "read" } : m
+            )
+          )
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(msgChannel)
+      supabase.removeChannel(receiptChannel)
+    }
   }, [peerId, loadMessages])
 
   const send = React.useCallback(async (content: string, mediaUrl?: string, replyToId?: string) => {

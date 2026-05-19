@@ -14,6 +14,7 @@ export interface DMConversation {
     isVerified?: boolean
   }
   lastMessage: string
+  lastMessageTime: string   // ISO — used for stable sort
   time: string
   unreadCount: number
 }
@@ -27,19 +28,36 @@ export function useDMConversations() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setLoading(false); return }
 
-    const { data: messages } = await supabase
-      .from("direct_messages")
-      .select(`
-        id, content, created_at, sender_id, receiver_id,
-        sender:profiles!direct_messages_sender_id_fkey(id, display_name, username, avatar_url, status),
-        receiver:profiles!direct_messages_receiver_id_fkey(id, display_name, username, avatar_url, status)
-      `)
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-      .order("created_at", { ascending: false })
-      .limit(50)
+    // Fetch latest messages per conversation + unread counts in one go
+    const [{ data: messages }, { data: unreadRows }] = await Promise.all([
+      supabase
+        .from("direct_messages")
+        .select(`
+          id, content, created_at, sender_id, receiver_id, status,
+          sender:profiles!direct_messages_sender_id_fkey(id, display_name, username, avatar_url, status),
+          receiver:profiles!direct_messages_receiver_id_fkey(id, display_name, username, avatar_url, status)
+        `)
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order("created_at", { ascending: false })
+        .limit(100),
+
+      // Count unread messages received by me (status != 'read')
+      supabase
+        .from("direct_messages")
+        .select("sender_id")
+        .eq("receiver_id", user.id)
+        .neq("status", "read"),
+    ])
 
     if (!messages) { setLoading(false); return }
 
+    // Build unread count map per sender
+    const unreadMap: Record<string, number> = {}
+    for (const row of (unreadRows || []) as any[]) {
+      unreadMap[row.sender_id] = (unreadMap[row.sender_id] || 0) + 1
+    }
+
+    // Group by peer — first message per peer is the latest (already sorted DESC)
     const seen = new Set<string>()
     const convos: DMConversation[] = []
 
@@ -50,15 +68,20 @@ export function useDMConversations() {
 
       const name: string = peer.display_name || peer.username || "Unknown"
       const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+      const createdAt: string = msg.created_at
 
       convos.push({
         id: peer.id,
         user: { id: peer.id, name, initials, isOnline: peer.status === "Online", avatarUrl: peer.avatar_url },
-        lastMessage: msg.content || "",
-        time: new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        unreadCount: 0,
+        lastMessage: msg.content || "📎 Media",
+        lastMessageTime: createdAt,
+        time: formatTime(createdAt),
+        unreadCount: unreadMap[peer.id] || 0,
       })
     }
+
+    // Sort: conversations with most recent message first
+    convos.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime())
 
     setConversations(convos)
     setLoading(false)
@@ -68,10 +91,8 @@ export function useDMConversations() {
     load()
 
     const supabase = createClient()
-    // Unique channel name prevents React StrictMode double-mount conflicts
-    const channelName = `dm_list_${Math.random().toString(36).slice(2)}`
     const channel = supabase
-      .channel(channelName)
+      .channel(`dm_list_${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, load)
       .subscribe()
 
@@ -79,4 +100,17 @@ export function useDMConversations() {
   }, [load])
 
   return { conversations, loading }
+}
+
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diff = now.getTime() - d.getTime()
+  if (diff < 60000) return "Just now"
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
+  if (d.toDateString() === now.toDateString())
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday"
+  return d.toLocaleDateString([], { day: "numeric", month: "short" })
 }

@@ -16,8 +16,9 @@ async function uploadAvatar(file: File): Promise<string> {
   form.append("file", file);
   form.append("upload_preset", UPLOAD_PRESET);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: form });
-  if (!res.ok) throw new Error("Upload failed");
-  return (await res.json()).secure_url as string;
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error?.message ?? `HTTP ${res.status}`);
+  return json.secure_url as string;
 }
 
 interface ProfileFormProps {
@@ -63,8 +64,8 @@ export function ProfileForm({ initialName, initialUsername, initialEmail, initia
       setAvatarUrl(url);
       setPreview(url);
       URL.revokeObjectURL(local);
-    } catch {
-      setUploadErr("Upload failed. Check that NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is correct in Vercel.");
+    } catch (e: unknown) {
+      setUploadErr(`Upload failed: ${(e as Error)?.message ?? "unknown error"}`);
       setPreview(avatarUrl); // revert to old
     } finally {
       setUploading(false);

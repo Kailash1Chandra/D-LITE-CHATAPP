@@ -19,8 +19,8 @@ async function uploadToCloudinary(file: File): Promise<string> {
     `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
     { method: "POST", body: form },
   );
-  if (!res.ok) throw new Error("Upload failed");
   const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message ?? `HTTP ${res.status}`);
   return data.secure_url as string;
 }
 
@@ -170,6 +170,7 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState(false);
+  const [uploadErrMsg, setUploadErrMsg] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [showPoll, setShowPoll] = useState(false);
 
@@ -229,12 +230,14 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
     const msg = rawText ?? text;
     if (!msg.trim() && !pendingFile) return;
     setUploadErr(false);
+    setUploadErrMsg("");
     try {
       setUploading(!!pendingFile);
       let cloudUrl: string | undefined;
       if (pendingFile) {
         if (!CLOUD_NAME) {
           setUploadErr(true);
+          setUploadErrMsg("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME not set in Vercel.");
           setUploading(false);
           return;
         }
@@ -243,8 +246,9 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
       onSend(msg.trim(), cloudUrl);
       setText("");
       removeFile();
-    } catch {
+    } catch (e: any) {
       setUploadErr(true);
+      setUploadErrMsg(e?.message ?? "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -263,7 +267,7 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
     <div className="relative p-3 md:p-4 themed-surface border-t themed-border flex flex-col gap-2">
       {uploadErr && (
         <p className="text-xs px-1" style={{ color: "var(--danger)" }}>
-          ⚠ Upload failed — check that NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is set correctly in Vercel.
+          ⚠ {uploadErrMsg}
         </p>
       )}
 

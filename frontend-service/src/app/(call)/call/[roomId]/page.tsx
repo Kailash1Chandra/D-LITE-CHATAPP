@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { PhoneOff, Phone, Loader2, Wifi } from "lucide-react";
+import { PhoneOff, Phone, Loader2, Wifi, Video as VideoIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/core/auth/supabase-client";
 import { Avatar } from "@/shared/components/Avatar";
@@ -41,8 +41,9 @@ function CallRoom() {
   const callType = (searchParams.get("type") ?? "video") as "audio" | "video";
   const isVideo = callType === "video";
 
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  // Callback refs: re-fire whenever either the element mounts OR the stream changes
+  const [localVideoEl,  setLocalVideoEl]  = useState<HTMLVideoElement | null>(null);
+  const [remoteVideoEl, setRemoteVideoEl] = useState<HTMLVideoElement | null>(null);
   const [peer, setPeer] = useState<Peer>({ name: "Connecting…", initials: "…" });
 
   const peerId = searchParams.get("peerId");
@@ -53,27 +54,27 @@ function CallRoom() {
     window.location.href = returnUrl;
   }
 
+  const [showingVideo, setShowingVideo] = useState(isVideo);
   const {
     phase, errorMsg,
     localStream, remoteStream,
-    muted, camOff,
-    toggleMic, toggleCam, shareScreen, hangUp,
+    muted, camOff, isVideoActive,
+    toggleMic, toggleCam, shareScreen, upgradeToVideo, hangUp,
   } = useWebRTCCall(roomId, callType, leave);
+
+  // Sync video active state from hook
+  useEffect(() => { setShowingVideo(isVideoActive); }, [isVideoActive]);
 
   const timerStr = useCallTimer(phase === "in-call");
 
-  // Wire streams to video elements
+  // Wire streams — runs when either the element mounts or the stream changes
   useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
+    if (localVideoEl && localStream) { localVideoEl.srcObject = localStream; localVideoEl.play().catch(() => {}); }
+  }, [localVideoEl, localStream]);
 
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
+    if (remoteVideoEl && remoteStream) { remoteVideoEl.srcObject = remoteStream; remoteVideoEl.play().catch(() => {}); }
+  }, [remoteVideoEl, remoteStream]);
 
   // Load peer info
   useEffect(() => {
@@ -100,15 +101,14 @@ function CallRoom() {
 
       {/* ── Remote video — fullscreen background ── */}
       <video
-        ref={remoteVideoRef}
-        autoPlay
-        playsInline
+        ref={setRemoteVideoEl}
+        autoPlay playsInline
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ display: phase === "in-call" && isVideo ? "block" : "none" }}
+        style={{ display: phase === "in-call" && showingVideo ? "block" : "none" }}
       />
 
       {/* ── Audio-only: show peer avatar when in-call ── */}
-      {phase === "in-call" && !isVideo && (
+      {phase === "in-call" && !showingVideo && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-4"
           style={{ background: "linear-gradient(160deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)" }}
@@ -116,6 +116,13 @@ function CallRoom() {
           <Avatar initials={peer.initials} size="xl" />
           <p className="text-xl font-bold text-white">{peer.name}</p>
           <p className="text-sm font-mono" style={{ color: "rgba(255,255,255,0.5)" }}>{timerStr}</p>
+          {/* Upgrade to video button */}
+          <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+            onClick={async () => { await upgradeToVideo(); }}
+            className="mt-4 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
+            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}>
+            <VideoIcon size={16} /> Turn on Camera
+          </motion.button>
         </div>
       )}
 
@@ -225,23 +232,25 @@ function CallRoom() {
               </span>
             </div>
 
-            {/* Local video — PIP bottom-right */}
-            {isVideo && (
-              <div className="absolute bottom-32 right-4 pointer-events-auto"
-                style={{ width: 120, height: 160, borderRadius: 16, overflow: "hidden", border: "2px solid rgba(255,255,255,0.2)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}>
-                <video ref={localVideoRef} autoPlay playsInline muted
-                  className="w-full h-full object-cover"
-                  style={{ transform: "scaleX(-1)" }}
-                />
-              </div>
-            )}
+            {/* Local video — PIP bottom-right (always mounted so srcObject wires on mount) */}
+            <div className="absolute bottom-32 right-4 pointer-events-auto"
+              style={{
+                width: 120, height: 160, borderRadius: 16, overflow: "hidden",
+                border: "2px solid rgba(255,255,255,0.2)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                display: showingVideo ? "block" : "none",
+              }}>
+              <video ref={setLocalVideoEl} autoPlay playsInline muted
+                className="w-full h-full object-cover"
+                style={{ transform: "scaleX(-1)" }}
+              />
+            </div>
 
             {/* Controls */}
             <div className="pointer-events-auto absolute bottom-0 inset-x-0">
               <CallControls
                 muted={muted}
                 camOff={camOff}
-                isVideo={isVideo}
+                isVideo={showingVideo}
                 onToggleMic={toggleMic}
                 onToggleCam={toggleCam}
                 onShareScreen={shareScreen}

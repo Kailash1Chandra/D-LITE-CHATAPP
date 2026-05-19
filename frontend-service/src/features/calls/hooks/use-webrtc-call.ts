@@ -21,9 +21,11 @@ export interface UseWebRTCCallReturn {
   remoteStream: MediaStream | null;
   muted: boolean;
   camOff: boolean;
+  isVideoActive: boolean;
   toggleMic: () => void;
   toggleCam: () => void;
   shareScreen: () => Promise<void>;
+  upgradeToVideo: () => Promise<boolean>;
   hangUp: () => void;
 }
 
@@ -38,6 +40,7 @@ export function useWebRTCCall(
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
+  const [isVideoActive, setIsVideoActive] = useState(callType === "video");
 
   const socketRef = useRef<Socket | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -218,6 +221,23 @@ export function useWebRTCCall(
     setCamOff(nowOff);
   }, [camOff]);
 
+  const upgradeToVideo = useCallback(async (): Promise<boolean> => {
+    if (!pcRef.current || !localStreamRef.current) return false;
+    try {
+      const vs = await navigator.mediaDevices.getUserMedia({ video: true });
+      const vt = vs.getVideoTracks()[0];
+      localStreamRef.current.addTrack(vt);
+      setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+      pcRef.current.addTrack(vt, localStreamRef.current);
+      // Renegotiate with peer
+      const offer = await pcRef.current.createOffer();
+      await pcRef.current.setLocalDescription(offer);
+      socketRef.current?.emit("call_signal", { roomId, signal: { type: "offer", sdp: pcRef.current.localDescription } });
+      setIsVideoActive(true);
+      return true;
+    } catch { return false; }
+  }, [roomId]);
+
   const shareScreen = useCallback(async () => {
     try {
       const screen = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -246,5 +266,5 @@ export function useWebRTCCall(
     onHangUpRef.current();
   }, [roomId]);
 
-  return { phase, errorMsg, localStream, remoteStream, muted, camOff, toggleMic, toggleCam, shareScreen, hangUp };
+  return { phase, errorMsg, localStream, remoteStream, muted, camOff, isVideoActive, toggleMic, toggleCam, shareScreen, upgradeToVideo, hangUp };
 }

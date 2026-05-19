@@ -94,10 +94,16 @@ export function useWebRTCCall(
         };
 
         // 4. Connect to realtime-service for signaling
-        const wsUrl = process.env.NEXT_PUBLIC_REALTIME_WS_URL ?? "http://localhost:5050";
+        const wsUrl = (process.env.NEXT_PUBLIC_REALTIME_WS_URL ?? "http://localhost:5050")
+          .replace(/^wss?:\/\//, "https://").replace(/^http:\/\//, "http://");
         const socket = io(wsUrl, {
           auth: { user_id: user.id },
-          transports: ["websocket"],
+          // polling first → upgrades to websocket once Render wakes up.
+          // websocket-only fails immediately when Render free tier is sleeping.
+          transports: ["polling", "websocket"],
+          reconnection: true,
+          reconnectionAttempts: 10,
+          reconnectionDelay: 2000,
         });
         socketRef.current = socket;
 

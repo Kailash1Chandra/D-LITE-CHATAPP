@@ -1,6 +1,7 @@
 import { IconRail } from "@/shared/components/IconRail";
 import { getUser, getInitials } from "@/core/auth/get-user";
 import { CallListener } from "@/features/calls/components/CallListener";
+import { KeepAlive } from "@/shared/components/KeepAlive";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getUser();
@@ -14,6 +15,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <CallListener />
+      <KeepAlive />
     </div>
   );
 }

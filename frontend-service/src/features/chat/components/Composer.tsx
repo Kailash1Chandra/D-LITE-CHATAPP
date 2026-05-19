@@ -9,7 +9,7 @@ import { IconButton } from "@/shared/components/IconButton";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
-const UPLOAD_PRESET = "dlite_avatars";
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "ml_default";
 
 async function uploadToCloudinary(file: File): Promise<string> {
   const form = new FormData();
@@ -263,7 +263,7 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
     <div className="relative p-3 md:p-4 themed-surface border-t themed-border flex flex-col gap-2">
       {uploadErr && (
         <p className="text-xs px-1" style={{ color: "var(--danger)" }}>
-          ⚠ Upload failed — check that NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is set in Vercel and the "dlite_avatars" preset is Unsigned in Cloudinary console.
+          ⚠ Upload failed — check that NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is set correctly in Vercel.
         </p>
       )}
 

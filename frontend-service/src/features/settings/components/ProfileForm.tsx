@@ -9,7 +9,7 @@ import { createClient } from "@/core/auth/supabase-client";
 import { getInitials } from "@/shared/utils/initials";
 
 const CLOUD_NAME    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
-const UPLOAD_PRESET = "dlite_avatars";
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "ml_default";
 
 async function uploadAvatar(file: File): Promise<string> {
   const form = new FormData();
@@ -64,7 +64,7 @@ export function ProfileForm({ initialName, initialUsername, initialEmail, initia
       setPreview(url);
       URL.revokeObjectURL(local);
     } catch {
-      setUploadErr("Upload failed. Make sure the 'dlite_avatars' preset is Unsigned in Cloudinary.");
+      setUploadErr("Upload failed. Check that NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is correct in Vercel.");
       setPreview(avatarUrl); // revert to old
     } finally {
       setUploading(false);

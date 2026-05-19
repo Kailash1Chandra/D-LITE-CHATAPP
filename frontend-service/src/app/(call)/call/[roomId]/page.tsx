@@ -2,16 +2,12 @@
 
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import {
-  Mic, MicOff, Video, VideoOff, ScreenShare,
-  PhoneOff, Phone, Loader2,
-} from "lucide-react";
+import { PhoneOff, Phone, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/core/auth/supabase-client";
 import { Avatar } from "@/shared/components/Avatar";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CALLS_URL = process.env.NEXT_PUBLIC_CALLS_API_URL ?? "";
 
 async function markCallDone(roomId: string) {
   if (!UUID_RE.test(roomId)) return;
@@ -22,22 +18,6 @@ async function markCallDone(roomId: string) {
       .update({ status: "completed", ended_at: new Date().toISOString() })
       .eq("id", roomId);
   } catch {}
-}
-
-async function fetchToken(
-  roomId: string,
-  userId: string,
-  userName: string,
-): Promise<{ token: string; appId: number } | null> {
-  if (!CALLS_URL) return null;
-  try {
-    const params = new URLSearchParams({ roomId, userId, userName });
-    const res = await fetch(`${CALLS_URL}/token?${params}`);
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
 }
 
 function useCallTimer() {
@@ -119,24 +99,20 @@ function CallRoom() {
         const { ZegoUIKitPrebuilt } = await import("@zegocloud/zego-uikit-prebuilt");
         if (cancelled) return;
 
-        // Try call-service first (server-side secret); fall back to client-side test token
-        let kitToken: string;
-        const svcResult = await fetchToken(roomId, userId, userName);
-        if (svcResult) {
-          // call-service already returns a complete kit token ("04" + base64 payload)
-          // — use it directly, do NOT pass through generateKitTokenForProduction
-          // which would double-wrap it and produce an invalid token
-          kitToken = svcResult.token;
-        } else {
-          const appId = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID ?? 0);
-          const secret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET ?? "";
-          if (!appId || !secret) {
-            setErrorMsg("ZEGOCLOUD credentials not configured. Set NEXT_PUBLIC_ZEGO_APP_ID and NEXT_PUBLIC_ZEGO_SERVER_SECRET in Vercel, or deploy the call-service.");
-            setPhase("error");
-            return;
-          }
-          kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(appId, secret, roomId, userId, userName);
+        const appId = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID ?? 0);
+        const secret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET ?? "";
+        if (!appId || !secret) {
+          setErrorMsg("ZEGOCLOUD credentials not configured — set NEXT_PUBLIC_ZEGO_APP_ID and NEXT_PUBLIC_ZEGO_SERVER_SECRET in Vercel.");
+          setPhase("error");
+          return;
         }
+
+        // Use ZEGOCLOUD's own function — guaranteed correct token format.
+        // Server-side token generation (call-service) was producing an AES
+        // format that differed from what create() validates, causing kitToken error.
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+          appId, secret, roomId, userId, userName,
+        );
 
         if (cancelled) return;
 

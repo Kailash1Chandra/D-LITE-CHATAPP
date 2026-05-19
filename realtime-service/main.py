@@ -112,3 +112,35 @@ async def get_online_users(sid, data):
 @sio.event
 async def ping(sid, data):
     await sio.emit("pong", {}, to=sid)
+
+
+# ── WebRTC signaling relay ────────────────────────────────────────────────────
+# Simple relay — server never inspects the signal content, just forwards it.
+
+@sio.event
+async def join_call_room(sid, data):
+    """data: { roomId: str }
+    Join a WebRTC call room. Notifies any peer already waiting so they
+    can initiate the offer/answer handshake."""
+    room = f"call:{(data or {}).get('roomId')}"
+    await sio.enter_room(sid, room)
+    user_id = _online.get(sid)
+    await sio.emit("peer_joined", {"user_id": user_id}, room=room, skip_sid=sid)
+
+
+@sio.event
+async def call_signal(sid, data):
+    """data: { roomId: str, signal: { type: offer|answer|candidate, ... } }
+    Relay any WebRTC signal to all other peers in the call room."""
+    room = f"call:{(data or {}).get('roomId')}"
+    signal = (data or {}).get("signal")
+    user_id = _online.get(sid)
+    await sio.emit("call_signal", {"from": user_id, "signal": signal}, room=room, skip_sid=sid)
+
+
+@sio.event
+async def leave_call_room(sid, data):
+    """data: { roomId: str }"""
+    room = f"call:{(data or {}).get('roomId')}"
+    await sio.leave_room(sid, room)
+    await sio.emit("peer_left", {}, room=room, skip_sid=sid)

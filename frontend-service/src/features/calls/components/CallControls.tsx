@@ -1,63 +1,104 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Mic, MicOff, Video, VideoOff, ScreenShare, MessageSquare, PhoneOff, Settings } from "lucide-react";
-import { IconButton } from "@/shared/components/IconButton";
+import React from "react";
+import { Mic, MicOff, Video, VideoOff, ScreenShare, PhoneOff } from "lucide-react";
 import { motion } from "framer-motion";
 
-export function CallControls() {
-  const router = useRouter();
-  const [muted, setMuted] = useState(false);
-  const [videoOff, setVideoOff] = useState(false);
+interface CallControlsProps {
+  muted: boolean;
+  camOff: boolean;
+  isVideo: boolean;
+  onToggleMic: () => void;
+  onToggleCam: () => void;
+  onShareScreen: () => void;
+  onLeave: () => void;
+}
 
+function ControlBtn({
+  active, danger, onClick, title, children,
+}: {
+  active?: boolean;
+  danger?: boolean;
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="h-24 shrink-0 themed-surface/80 backdrop-blur-xl border-t themed-border flex items-center justify-center gap-4 px-6 z-10">
-      <IconButton 
-        size="lg" 
-        variant={muted ? "secondary" : "ghost"} 
-        className={muted ? "text-[var(--danger)] bg-red-500/10 hover:bg-red-500/20" : "themed-text-2 hover:text-[var(--brand-text)] themed-surface-2"} 
-        onClick={() => setMuted(!muted)}
-        tooltip={muted ? "Unmute" : "Mute"}
+    <motion.button
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.93 }}
+      onClick={onClick}
+      title={title}
+      className="flex flex-col items-center gap-1.5"
+    >
+      <div
+        className="w-14 h-14 rounded-full flex items-center justify-center transition-all"
+        style={{
+          background: danger
+            ? "#ef4444"
+            : active
+            ? "rgba(255,255,255,0.15)"
+            : "rgba(255,255,255,0.08)",
+          boxShadow: danger ? "0 4px 20px rgba(239,68,68,0.4)" : undefined,
+          border: "1px solid rgba(255,255,255,0.12)",
+        }}
       >
+        <span style={{ color: danger ? "#fff" : active ? "#fbbf24" : "rgba(255,255,255,0.85)" }}>
+          {children}
+        </span>
+      </div>
+      <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
+        {title}
+      </span>
+    </motion.button>
+  );
+}
+
+export function CallControls({
+  muted, camOff, isVideo,
+  onToggleMic, onToggleCam, onShareScreen, onLeave,
+}: CallControlsProps) {
+  return (
+    <div
+      className="absolute bottom-0 inset-x-0 z-20 flex items-center justify-center gap-5 pb-8 pt-4"
+      style={{
+        background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)",
+      }}
+    >
+      <ControlBtn active={muted} onClick={onToggleMic} title={muted ? "Unmute" : "Mute"}>
         {muted ? <MicOff size={22} /> : <Mic size={22} />}
-      </IconButton>
+      </ControlBtn>
 
-      <IconButton 
-        size="lg" 
-        variant={videoOff ? "secondary" : "ghost"} 
-        className={videoOff ? "text-[var(--danger)] bg-red-500/10 hover:bg-red-500/20" : "themed-text-2 hover:text-[var(--brand-text)] themed-surface-2"} 
-        onClick={() => setVideoOff(!videoOff)}
-        tooltip={videoOff ? "Start Video" : "Stop Video"}
-      >
-        {videoOff ? <VideoOff size={22} /> : <Video size={22} />}
-      </IconButton>
+      {isVideo && (
+        <ControlBtn active={camOff} onClick={onToggleCam} title={camOff ? "Start Video" : "Stop Video"}>
+          {camOff ? <VideoOff size={22} /> : <Video size={22} />}
+        </ControlBtn>
+      )}
 
-      <IconButton size="lg" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] themed-surface-2" tooltip="Share Screen">
-        <ScreenShare size={22} />
-      </IconButton>
+      {isVideo && (
+        <ControlBtn onClick={onShareScreen} title="Share Screen">
+          <ScreenShare size={22} />
+        </ControlBtn>
+      )}
 
-      <IconButton size="lg" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] themed-surface-2" tooltip="Chat">
-        <MessageSquare size={22} />
-      </IconButton>
-
-      <div className="w-px h-8 themed-border mx-2" />
-
+      {/* Leave button — bigger, red */}
       <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => router.push("/dashboard")}
-        className="h-14 px-8 rounded-2xl bg-[var(--danger)] text-white flex items-center gap-2 font-bold shadow-lg shadow-red-500/20"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.92 }}
+        onClick={onLeave}
+        title="Leave Call"
+        className="flex flex-col items-center gap-1.5"
       >
-        <PhoneOff size={20} />
-        Leave Call
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center"
+          style={{ background: "#ef4444", boxShadow: "0 6px 24px rgba(239,68,68,0.5)" }}
+        >
+          <PhoneOff size={24} className="text-white" />
+        </div>
+        <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
+          Leave
+        </span>
       </motion.button>
-
-      <div className="w-px h-8 themed-border mx-2" />
-
-      <IconButton size="lg" variant="ghost" className="themed-text-2 hover:text-[var(--brand-text)] themed-surface-2" tooltip="Settings">
-        <Settings size={22} />
-      </IconButton>
     </div>
   );
 }

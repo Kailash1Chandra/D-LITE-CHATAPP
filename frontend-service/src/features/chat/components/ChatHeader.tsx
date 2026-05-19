@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Phone, Video, MoreVertical } from "lucide-react";
+import { Phone, Video, MoreVertical, Download } from "lucide-react";
 import { Avatar } from "@/shared/components/Avatar";
 import { IconButton } from "@/shared/components/IconButton";
 import { TypingDots } from "@/shared/components/TypingDots";
 import { User } from "@/features/dashboard/lib/mock-data";
 import { createClient } from "@/core/auth/supabase-client";
+import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export interface ChatHeaderProps {
   user: User;
@@ -17,6 +19,15 @@ export interface ChatHeaderProps {
 export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
   const router = useRouter();
   const statusLine = isTyping ? null : (subText ?? (user.isOnline ? "Online now" : "Last seen recently"));
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [showMenu]);
 
   async function startCall(type: "audio" | "video") {
     const supabase = createClient();
@@ -69,9 +80,37 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
           <Video size={20} />
         </IconButton>
         <div className="w-px h-6 mx-1" style={{ background: "var(--border)" }} />
-        <IconButton size="md" variant="ghost" className="themed-text-2 hover:themed-text" tooltip="More">
-          <MoreVertical size={20} />
-        </IconButton>
+        <div ref={menuRef} className="relative">
+          <IconButton size="md" variant="ghost" className="themed-text-2 hover:themed-text" tooltip="More"
+            onClick={() => setShowMenu(v => !v)}>
+            <MoreVertical size={20} />
+          </IconButton>
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.12 }}
+                className="absolute right-0 top-full mt-1 rounded-2xl overflow-hidden z-50"
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                  minWidth: 180,
+                }}
+              >
+                <button
+                  onClick={() => { setShowMenu(false); router.push(`/settings/backup`); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium themed-text hover:bg-[var(--row-hover-bg)] transition-colors"
+                >
+                  <Download size={15} style={{ color: "var(--text-muted)" }} />
+                  Export Chat
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

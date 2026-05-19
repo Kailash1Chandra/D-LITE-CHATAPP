@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Palette, Bell, Shield, KeyRound } from "lucide-react";
+import { User, Palette, Bell, Shield, KeyRound, HardDrive } from "lucide-react";
 
 const links = [
-  { href: "/settings",              icon: User,     label: "Profile",         exact: true },
-  { href: "/settings/appearance",   icon: Palette,  label: "Appearance" },
-  { href: "/settings/notifications",icon: Bell,     label: "Notifications" },
-  { href: "/settings/privacy",      icon: Shield,   label: "Privacy & Safety" },
-  { href: "/settings/2fa",          icon: KeyRound, label: "Two-Factor Auth" },
+  { href: "/settings",              icon: User,      label: "Profile",         exact: true },
+  { href: "/settings/appearance",   icon: Palette,   label: "Appearance" },
+  { href: "/settings/notifications",icon: Bell,      label: "Notifications" },
+  { href: "/settings/privacy",      icon: Shield,    label: "Privacy & Safety" },
+  { href: "/settings/2fa",          icon: KeyRound,  label: "Two-Factor Auth" },
+  { href: "/settings/backup",       icon: HardDrive, label: "Backup & Export" },
 ];
 
 export function SettingsSidebar() {

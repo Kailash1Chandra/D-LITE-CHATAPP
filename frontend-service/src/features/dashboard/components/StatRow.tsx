@@ -29,11 +29,31 @@ export async function StatRow() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <StatCard label="Messages sent" value={messages} delta={0} icon={<MessageSquare size={20} />} iconColorClass="text-brand-500" />
-      <StatCard label="Active calls" value={calls} delta={0} icon={<PhoneCall size={20} />} iconColorClass="text-accent-pink" />
-      <StatCard label="Groups joined" value={groups} delta={0} icon={<Users size={20} />} iconColorClass="text-accent-purple" />
-      <StatCard label="AI tasks completed" value={0} delta={0} icon={<Zap size={20} />} iconColorClass="text-success" />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <StatCard
+        label="Messages"
+        value={messages}
+        icon={<MessageSquare size={18} />}
+        gradient="linear-gradient(135deg,#7c3aed,#a855f7)"
+      />
+      <StatCard
+        label="Calls"
+        value={calls}
+        icon={<PhoneCall size={18} />}
+        gradient="linear-gradient(135deg,#ec4899,#f43f5e)"
+      />
+      <StatCard
+        label="Groups"
+        value={groups}
+        icon={<Users size={18} />}
+        gradient="linear-gradient(135deg,#0ea5e9,#6366f1)"
+      />
+      <StatCard
+        label="AI Tasks"
+        value={0}
+        icon={<Zap size={18} />}
+        gradient="linear-gradient(135deg,#10b981,#06b6d4)"
+      />
     </div>
   );
 }

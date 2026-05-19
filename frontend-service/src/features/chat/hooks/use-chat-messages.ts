@@ -9,6 +9,7 @@ export interface Message {
   mediaUrl?: string
   isOwn: boolean
   time: string
+  createdAt: string   // ISO — used for chronological sorting with calls
   status?: "sending" | "sent" | "delivered" | "read" | "failed"
   replyTo?: { id: string; content: string; sender: string }
   reactions?: { emoji: string; count: number; reacted: boolean }[]
@@ -40,6 +41,7 @@ function toMessage(raw: any, currentUserId: string): Message {
     mediaUrl: raw.media_url ?? undefined,
     isOwn: raw.sender_id === currentUserId,
     time: new Date(raw.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+    createdAt: raw.created_at,
     status: raw.status as Message["status"],
     reactions: Object.entries(grouped).map(([emoji, { count, reacted }]) => ({ emoji, count, reacted })),
     replyTo: undefined,
@@ -102,12 +104,14 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     const supabase = createClient()
 
     const optimisticId = `opt-${Date.now()}`
+    const now = new Date().toISOString();
     const optimistic: Message = {
       id: optimisticId,
       content,
       mediaUrl,
       isOwn: true,
-      time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+      time: new Date(now).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+      createdAt: now,
       status: "sending",
     }
     setMessages((prev) => [...prev, optimistic])

@@ -130,7 +130,7 @@ export default function ChatPage() {
   const threadItems: ThreadItem[] = [
     ...messages.map((m): ThreadItem => ({
       kind: "message",
-      ts: new Date(m.time).getTime() || 0,
+      ts: new Date(m.createdAt).getTime(),
       data: {
         id: m.id,
         direction: m.isOwn ? "out" : "in",

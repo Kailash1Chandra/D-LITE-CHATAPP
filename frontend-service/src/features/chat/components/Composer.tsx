@@ -169,6 +169,7 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showPoll, setShowPoll] = useState(false);
 
@@ -227,17 +228,23 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
   async function handleSend(rawText?: string) {
     const msg = rawText ?? text;
     if (!msg.trim() && !pendingFile) return;
+    setUploadErr(false);
     try {
       setUploading(!!pendingFile);
       let cloudUrl: string | undefined;
-      if (pendingFile && CLOUD_NAME) cloudUrl = await uploadToCloudinary(pendingFile);
+      if (pendingFile) {
+        if (!CLOUD_NAME) {
+          setUploadErr(true);
+          setUploading(false);
+          return;
+        }
+        cloudUrl = await uploadToCloudinary(pendingFile);
+      }
       onSend(msg.trim(), cloudUrl);
       setText("");
       removeFile();
     } catch {
-      onSend(msg.trim());
-      setText("");
-      removeFile();
+      setUploadErr(true);
     } finally {
       setUploading(false);
     }
@@ -248,11 +255,17 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
   }
 
   const isImage = pendingFile?.type.startsWith("image/");
+  const isVid   = pendingFile?.type.startsWith("video/");
   const isVideo = pendingFile?.type.startsWith("video/");
   const canSend = (text.trim().length > 0 || !!pendingFile) && !uploading;
 
   return (
     <div className="relative p-3 md:p-4 themed-surface border-t themed-border flex flex-col gap-2">
+      {uploadErr && (
+        <p className="text-xs px-1" style={{ color: "var(--danger)" }}>
+          ⚠ Upload failed — check that NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is set in Vercel and the "dlite_avatars" preset is Unsigned in Cloudinary console.
+        </p>
+      )}
 
       {/* Hidden file inputs */}
       <input ref={photoInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />

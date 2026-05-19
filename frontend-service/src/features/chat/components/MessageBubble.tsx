@@ -180,11 +180,14 @@ export function MessageBubble({
             </div>
           )}
 
-          {mediaUrl && (
+          {mediaUrl && (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(mediaUrl) ? (
+            <video src={mediaUrl} controls className="max-w-full max-h-64 block rounded-lg" style={{ minWidth: 120 }} />
+          ) : (
             <a href={mediaUrl} target="_blank" rel="noopener noreferrer">
-              <img src={mediaUrl} alt="media" className="max-w-full max-h-64 object-cover block" style={{ minWidth: 120 }} />
+              <img src={mediaUrl} alt="media" className="max-w-full max-h-64 object-cover block" style={{ minWidth: 120 }}
+                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
             </a>
-          )}
+          ))}
 
           {editing ? (
             <div className="flex flex-col gap-2 p-1">

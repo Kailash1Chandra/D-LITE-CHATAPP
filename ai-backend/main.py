@@ -48,8 +48,9 @@ if ALLOWED_ORIGINS:
     )
 
 SYSTEM_PROMPT = (
-    "You're talking with D-Lite — a friendly, down-to-earth assistant and teammate. "
-    "Speak like a helpful friend: be casual, supportive, and concise. "
+    "You're D-Lite, a casual, warm, friendly chat buddy. "
+    "Talk like a helpful friend, not a formal assistant: use simple words, be concise, upbeat, and natural. "
+    "When it fits, add a light conversational touch, but keep answers clear and useful. "
     "Help users manage conversations, summarize chats, draft messages, and answer questions."
 )
 
@@ -143,9 +144,37 @@ async def chat_stream(req: ChatRequest):
                     },
                     headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                 ) as resp:
+                    resp.raise_for_status()
+
+                    buffer = ""
                     async for chunk in resp.aiter_text():
-                        if chunk:
-                            yield f"data: {json.dumps({'delta': chunk})}\n\n"
+                        if not chunk:
+                            continue
+
+                        buffer += chunk
+
+                        while "\n" in buffer:
+                            line, buffer = buffer.split("\n", 1)
+                            line = line.strip()
+                            if not line.startswith("data:"):
+                                continue
+
+                            payload = line[5:].strip()
+                            if not payload or payload == "[DONE]":
+                                continue
+
+                            try:
+                                data = json.loads(payload)
+                            except Exception:
+                                continue
+
+                            choice = (data.get("choices") or [{}])[0]
+                            delta = choice.get("delta") or {}
+                            content = delta.get("content")
+
+                            # Skip reasoning/tool metadata and only stream visible assistant text.
+                            if content:
+                                yield f"data: {json.dumps({'delta': content})}\n\n"
 
             yield f"data: {json.dumps({'done': True})}\n\n"
         except Exception as e:

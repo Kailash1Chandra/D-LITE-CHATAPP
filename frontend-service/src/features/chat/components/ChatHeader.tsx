@@ -122,7 +122,7 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
           className="flex items-center gap-4 cursor-pointer group text-left"
           onClick={() => setShowProfile(v => !v)}
         >
-          <Avatar initials={user.initials} online={user.isOnline} verified={user.isVerified} size="md" />
+          <Avatar src={user.avatarUrl} initials={user.initials} online={user.isOnline} verified={user.isVerified} size="md" />
           <div>
             <h3 className="font-bold themed-text group-hover:text-[var(--brand-text)] transition-colors">
               {user.name}

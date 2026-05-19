@@ -24,6 +24,7 @@ export function ChatListItem({ chat }: { chat: ChatPreview }) {
     >
       <div className="relative shrink-0">
         <Avatar
+          src={chat.user.avatarUrl}
           initials={chat.user.initials}
           online={chat.user.isOnline}
           verified={chat.user.isVerified}

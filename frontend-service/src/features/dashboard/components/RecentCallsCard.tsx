@@ -29,7 +29,7 @@ function CallItem({ call, index }: { call: CallPreview; index: number }) {
       onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
     >
       <div className="relative shrink-0">
-        <Avatar initials={call.user.initials} online={call.user.isOnline} size="sm" />
+        <Avatar src={call.user.avatarUrl} initials={call.user.initials} online={call.user.isOnline} size="sm" />
         <div
           className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center border-2"
           style={{ background: iconBg, borderColor: "var(--surface)" }}

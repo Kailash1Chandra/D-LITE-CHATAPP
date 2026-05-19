@@ -30,7 +30,7 @@ export async function getRecentConversations(userId: string): Promise<ChatPrevie
 
     convos.push({
       id: peer.id,
-      user: { id: peer.id, name, initials, isOnline: peer.status === "Online" },
+      user: { id: peer.id, name, initials, isOnline: peer.status === "Online", avatarUrl: peer.avatar_url ?? undefined },
       lastMessage: msg.content || "",
       time: new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       unreadCount: 0,
@@ -141,7 +141,7 @@ export async function getRecentCalls(userId: string): Promise<CallPreview[]> {
 
     return {
       id: c.id,
-      user: { id: peer?.id || "", name, initials, isOnline: peer?.status === "Online" },
+      user: { id: peer?.id || "", name, initials, isOnline: peer?.status === "Online", avatarUrl: peer?.avatar_url ?? undefined },
       type: (c.type || "audio") as "audio" | "video",
       status: callStatus,
       duration,

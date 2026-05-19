@@ -20,7 +20,7 @@ export function RecentChatCard({ chat, index }: { chat: ChatPreview; index: numb
         onMouseEnter={e => (e.currentTarget.style.background = "var(--row-hover-bg)")}
         onMouseLeave={e => (e.currentTarget.style.background = hasUnread ? "var(--row-hover-bg)" : "transparent")}
       >
-        <Avatar initials={chat.user.initials} online={chat.user.isOnline} verified={chat.user.isVerified} size="md" />
+        <Avatar src={chat.user.avatarUrl} initials={chat.user.initials} online={chat.user.isOnline} verified={chat.user.isVerified} size="md" />
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-baseline">
             <h4

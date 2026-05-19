@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Edit, Search } from "lucide-react";
 import { IconButton } from "@/shared/components/IconButton";
-import { Input } from "@/shared/components/Input";
 import { ChatListItem } from "./ChatListItem";
 import { NewChatModal } from "./NewChatModal";
 import { useDMConversations } from "../hooks/use-dm-conversations";
@@ -41,13 +40,27 @@ export function ChatListSidebar() {
               <Edit size={16} />
             </IconButton>
           </div>
-          <Input
-            placeholder="Search chats..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            iconLeft={<Search size={16} />}
-            className="themed-input h-9 py-0 text-sm w-full"
-          />
+          <div className="relative">
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: "var(--text-muted)" }}
+            />
+            <input
+              type="text"
+              placeholder="Search chats..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-9 pl-9 pr-3 rounded-xl text-sm outline-none transition-all"
+              style={{
+                background: "var(--surface-2, var(--surface))",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = "var(--input-border-focus, var(--brand-text))")}
+              onBlur={e => (e.currentTarget.style.borderColor = "var(--border)")}
+            />
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">

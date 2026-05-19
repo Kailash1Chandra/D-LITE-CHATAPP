@@ -45,8 +45,6 @@ function CallRoom() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [peer, setPeer] = useState<Peer>({ name: "Connecting…", initials: "…" });
 
-  const timer = useCallTimer(false);
-
   const peerId = searchParams.get("peerId");
   const returnUrl = peerId ? `/chat/${peerId}` : "/dashboard";
 

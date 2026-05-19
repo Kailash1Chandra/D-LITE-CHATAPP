@@ -43,131 +43,151 @@ export function useWebRTCCall(
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const makingOfferRef = useRef(false);
-  const cancelledRef = useRef(false);
+  // Store onHangUp in a ref so it never causes the effect to restart
+  const onHangUpRef = useRef(onHangUp);
+  useEffect(() => { onHangUpRef.current = onHangUp; }, [onHangUp]);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
-  const cleanup = useCallback(() => {
-    cancelledRef.current = true;
-    localStreamRef.current?.getTracks().forEach(t => t.stop());
-    pcRef.current?.close();
-    pcRef.current = null;
-    socketRef.current?.emit("leave_call_room", { roomId });
-    socketRef.current?.disconnect();
-    socketRef.current = null;
-  }, [roomId]);
-
-  // ── Main setup ────────────────────────────────────────────────────────────
+  // ── Main setup — only re-runs when roomId or callType changes ────────────
 
   useEffect(() => {
-    let pc: RTCPeerConnection | null = null;
+    let cancelled = false; // local flag per effect run (not a ref)
+
+    function doCleanup() {
+      cancelled = true;
+      localStreamRef.current?.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+      pcRef.current?.close();
+      pcRef.current = null;
+      if (socketRef.current) {
+        socketRef.current.emit("leave_call_room", { roomId });
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    }
 
     async function setup() {
       try {
         // 1. Auth
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user || cancelledRef.current) return;
+        if (cancelled) return;
+        if (!user) { setErrorMsg("Not authenticated"); setPhase("error"); return; }
 
         // 2. Get local media
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: callType === "video",
-        });
-        if (cancelledRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: callType === "video",
+          });
+        } catch {
+          setErrorMsg("Camera/microphone access denied. Allow permissions and try again.");
+          setPhase("error");
+          return;
+        }
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
         localStreamRef.current = stream;
         setLocalStream(stream);
 
-        // 3. Create PeerConnection
-        pc = new RTCPeerConnection(STUN);
+        // 3. PeerConnection
+        const pc = new RTCPeerConnection(STUN);
         pcRef.current = pc;
-
-        stream.getTracks().forEach(track => pc!.addTrack(track, stream));
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
         const remote = new MediaStream();
         setRemoteStream(remote);
 
         pc.ontrack = (e) => {
-          e.streams[0].getTracks().forEach(t => remote.addTrack(t));
+          e.streams[0]?.getTracks().forEach(t => remote.addTrack(t));
           setRemoteStream(new MediaStream(remote.getTracks()));
           setPhase("in-call");
         };
 
-        // 4. Connect to realtime-service for signaling
+        pc.onicecandidate = ({ candidate }) => {
+          if (candidate && socketRef.current) {
+            socketRef.current.emit("call_signal", { roomId, signal: { type: "candidate", candidate } });
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          if (pc.connectionState === "connected") setPhase("in-call");
+          if (pc.connectionState === "failed") {
+            setErrorMsg("Peer connection failed. Check your network.");
+            setPhase("error");
+          }
+          if (pc.connectionState === "disconnected") {
+            setPhase("ended");
+            setTimeout(() => { if (!cancelled) onHangUpRef.current(); }, 1500);
+          }
+        };
+
+        // 4. Socket.IO signaling
         const wsUrl = (process.env.NEXT_PUBLIC_REALTIME_WS_URL ?? "http://localhost:5050")
-          .replace(/^wss?:\/\//, "https://").replace(/^http:\/\//, "http://");
+          .replace(/^wss?:\/\//, "https://");
         const socket = io(wsUrl, {
           auth: { user_id: user.id },
-          // polling first → upgrades to websocket once Render wakes up.
-          // websocket-only fails immediately when Render free tier is sleeping.
           transports: ["polling", "websocket"],
           reconnection: true,
-          reconnectionAttempts: 10,
+          reconnectionAttempts: 8,
           reconnectionDelay: 2000,
         });
         socketRef.current = socket;
 
         socket.on("connect", () => {
-          socket.emit("join_call_room", { roomId });
-          setPhase("waiting");
+          if (!cancelled) {
+            socket.emit("join_call_room", { roomId });
+            setPhase("waiting");
+          }
         });
 
-        // Peer joined → I was waiting → I send offer
+        socket.on("connect_error", () => {
+          if (!cancelled) {
+            setErrorMsg("Could not reach signaling server. Make sure NEXT_PUBLIC_REALTIME_WS_URL is set.");
+            setPhase("error");
+          }
+        });
+
+        // Peer joined first → send offer
         socket.on("peer_joined", async () => {
-          if (!pc || makingOfferRef.current) return;
+          if (cancelled || !pcRef.current || makingOfferRef.current) return;
           try {
             makingOfferRef.current = true;
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            socket.emit("call_signal", { roomId, signal: { type: "offer", sdp: pc.localDescription } });
-          } finally {
+            const offer = await pcRef.current.createOffer();
+            await pcRef.current.setLocalDescription(offer);
+            socket.emit("call_signal", { roomId, signal: { type: "offer", sdp: pcRef.current.localDescription } });
+          } catch {} finally {
             makingOfferRef.current = false;
           }
         });
 
-        // Relay: offer / answer / ice
-        socket.on("call_signal", async ({ signal }) => {
-          if (!pc) return;
+        // Receive signals
+        socket.on("call_signal", async ({ signal }: { signal: any }) => {
+          if (cancelled || !pcRef.current) return;
           try {
             if (signal.type === "offer") {
-              await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              socket.emit("call_signal", { roomId, signal: { type: "answer", sdp: pc.localDescription } });
+              await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+              const answer = await pcRef.current.createAnswer();
+              await pcRef.current.setLocalDescription(answer);
+              socket.emit("call_signal", { roomId, signal: { type: "answer", sdp: pcRef.current.localDescription } });
             } else if (signal.type === "answer") {
-              if (pc.signalingState !== "stable") {
-                await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+              if (pcRef.current.signalingState !== "stable") {
+                await pcRef.current.setRemoteDescription(new RTCSessionDescription(signal.sdp));
               }
             } else if (signal.type === "candidate" && signal.candidate) {
-              await pc.addIceCandidate(new RTCIceCandidate(signal.candidate)).catch(() => {});
+              await pcRef.current.addIceCandidate(new RTCIceCandidate(signal.candidate)).catch(() => {});
             }
           } catch {}
         });
 
         socket.on("peer_left", () => {
-          if (!cancelledRef.current) {
+          if (!cancelled) {
             setPhase("ended");
-            setTimeout(onHangUp, 1500);
+            setTimeout(() => { if (!cancelled) onHangUpRef.current(); }, 1500);
           }
         });
 
-        // ICE → send to peer
-        pc.onicecandidate = ({ candidate }) => {
-          if (candidate) {
-            socket.emit("call_signal", { roomId, signal: { type: "candidate", candidate } });
-          }
-        };
-
-        pc.onconnectionstatechange = () => {
-          if (pc?.connectionState === "connected") setPhase("in-call");
-          if (pc?.connectionState === "failed") {
-            setErrorMsg("Connection failed. Check your network.");
-            setPhase("error");
-          }
-        };
-
       } catch (e: any) {
-        if (!cancelledRef.current) {
+        if (!cancelled) {
           setErrorMsg(e?.message ?? "Could not start call");
           setPhase("error");
         }
@@ -175,15 +195,16 @@ export function useWebRTCCall(
     }
 
     setup();
-    return cleanup;
-  }, [roomId, callType, cleanup, onHangUp]);
+    return doCleanup;
+  // Only restart when roomId or callType changes — onHangUp is in a ref
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, callType]);
 
-  // ── Controls ──────────────────────────────────────────────────────────────
+  // ── Controls ─────────────────────────────────────────────────────────────
 
   const toggleMic = useCallback(() => {
     const stream = localStreamRef.current;
     if (!stream) return;
-    // muted=false → about to mute → disable tracks (enabled=false)
     const nowMuted = !muted;
     stream.getAudioTracks().forEach(t => { t.enabled = !nowMuted; });
     setMuted(nowMuted);
@@ -192,7 +213,6 @@ export function useWebRTCCall(
   const toggleCam = useCallback(() => {
     const stream = localStreamRef.current;
     if (!stream) return;
-    // camOff=false → about to turn off → disable tracks (enabled=false)
     const nowOff = !camOff;
     stream.getVideoTracks().forEach(t => { t.enabled = !nowOff; });
     setCamOff(nowOff);
@@ -203,18 +223,28 @@ export function useWebRTCCall(
       const screen = await navigator.mediaDevices.getDisplayMedia({ video: true });
       const videoTrack = screen.getVideoTracks()[0];
       const sender = pcRef.current?.getSenders().find(s => s.track?.kind === "video");
-      if (sender) await sender.replaceTrack(videoTrack);
-      videoTrack.onended = () => {
-        const original = localStreamRef.current?.getVideoTracks()[0];
-        if (original && sender) sender.replaceTrack(original);
-      };
+      if (sender) {
+        await sender.replaceTrack(videoTrack);
+        videoTrack.onended = () => {
+          const original = localStreamRef.current?.getVideoTracks()[0];
+          if (original && sender) sender.replaceTrack(original).catch(() => {});
+        };
+      }
     } catch {}
   }, []);
 
   const hangUp = useCallback(() => {
-    cleanup();
-    onHangUp();
-  }, [cleanup, onHangUp]);
+    localStreamRef.current?.getTracks().forEach(t => t.stop());
+    localStreamRef.current = null;
+    pcRef.current?.close();
+    pcRef.current = null;
+    if (socketRef.current) {
+      socketRef.current.emit("leave_call_room", { roomId });
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+    onHangUpRef.current();
+  }, [roomId]);
 
   return { phase, errorMsg, localStream, remoteStream, muted, camOff, toggleMic, toggleCam, shareScreen, hangUp };
 }

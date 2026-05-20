@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Plus } from "lucide-react";
-import { Input } from "@/shared/components/Input";
 import { Badge } from "@/shared/components/Badge";
 import { useGroupList } from "../hooks/use-group-list";
 import { CreateGroupModal } from "./CreateGroupModal";
@@ -36,13 +35,27 @@ export function GroupListSidebar() {
               <Plus size={16} />
             </button>
           </div>
-          <Input
-            placeholder="Search groups..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            iconLeft={<Search size={16} />}
-            className="themed-input h-9 py-0 text-sm w-full"
-          />
+          <div className="relative">
+            <Search
+              size={13}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: "var(--text-muted)" }}
+            />
+            <input
+              type="text"
+              placeholder="Search groups..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full h-8 pl-8 pr-3 rounded-lg text-[13px] outline-none transition-all"
+              style={{
+                background: "var(--row-hover-bg)",
+                border: "1px solid transparent",
+                color: "var(--text-primary)",
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = "var(--brand-text)")}
+              onBlur={e => (e.currentTarget.style.borderColor = "transparent")}
+            />
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">

@@ -32,8 +32,16 @@ function clampMenu(rawX: number, rawY: number): MenuPos {
   return { x: Math.max(x, 8), y: rawY, above };
 }
 
+function TickIcon({ status }: { status: string }) {
+  if (status === "sending")   return <Check size={12} style={{ opacity: 0.4, color: "currentColor" }} />;
+  if (status === "sent")      return <Check size={12} style={{ opacity: 0.7, color: "currentColor" }} />;
+  if (status === "delivered") return <CheckCheck size={12} style={{ opacity: 0.7, color: "currentColor" }} />;
+  if (status === "read")      return <CheckCheck size={12} style={{ color: "#38bdf8" }} />;
+  return null;
+}
+
 export function MessageBubble({
-  id, content, mediaUrl, direction, status = "read",
+  id, content, mediaUrl, direction, status = "sent",
   time, reactions = [], replyTo,
   onReact, onDelete, onEdit,
 }: MessageBubbleProps) {
@@ -45,31 +53,25 @@ export function MessageBubble({
   const menuRef = useRef<HTMLDivElement>(null);
   const editRef = useRef<HTMLTextAreaElement>(null);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menu && !showEmoji) return;
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenu(null);
-        setShowEmoji(false);
+        setMenu(null); setShowEmoji(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [menu, showEmoji]);
 
-  useEffect(() => {
-    if (editing) editRef.current?.focus();
-  }, [editing]);
+  useEffect(() => { if (editing) editRef.current?.focus(); }, [editing]);
 
-  // Right-click on bubble
   function handleContextMenu(e: React.MouseEvent) {
     e.preventDefault();
     setShowEmoji(false);
     setMenu(clampMenu(e.clientX, e.clientY));
   }
 
-  // ⋯ button click — anchor menu to the button
   const openMenuFromBtn = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setShowEmoji(false);
@@ -79,79 +81,72 @@ export function MessageBubble({
 
   function closeAll() { setMenu(null); setShowEmoji(false); }
 
-  function copy() {
-    navigator.clipboard.writeText(content);
-    closeAll();
-  }
-
-  function startEdit() {
-    setEditText(content);
-    setEditing(true);
-    closeAll();
-  }
-
+  function copy() { navigator.clipboard.writeText(content); closeAll(); }
+  function startEdit() { setEditText(content); setEditing(true); closeAll(); }
   function saveEdit() {
     if (editText.trim() && editText.trim() !== content) onEdit?.(id, editText.trim());
     setEditing(false);
   }
-
-  function handleDelete() {
-    onDelete?.(id);
-    closeAll();
-  }
+  function handleDelete() { onDelete?.(id); closeAll(); }
 
   const actions = [
-    { icon: Copy,   label: "Copy",               action: copy,         show: !!content,               danger: false },
-    { icon: Pencil, label: "Edit",               action: startEdit,    show: isOut && !!content,      danger: false },
-    { icon: Trash2, label: "Delete for everyone", action: handleDelete, show: isOut,                   danger: true  },
+    { icon: Copy,   label: "Copy",                action: copy,         show: !!content,          danger: false },
+    { icon: Pencil, label: "Edit",                action: startEdit,    show: isOut && !!content, danger: false },
+    { icon: Trash2, label: "Delete for everyone", action: handleDelete, show: isOut,              danger: true  },
   ].filter(a => a.show);
 
+  const hasOnlyMedia = mediaUrl && !content;
+
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 6, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       className={`flex w-full mb-1 ${isOut ? "justify-end" : "justify-start"} group`}
       onContextMenu={handleContextMenu}
     >
-      {/* Hover controls — 😊 and ⋯ */}
+      {/* Hover action buttons */}
       <div
-        className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity self-end mb-1
-          ${isOut ? "order-first mr-1" : "order-last ml-1"}`}
+        className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-150 self-end mb-3
+          ${isOut ? "order-first mr-2" : "order-last ml-2"}`}
       >
         {onReact && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowEmoji(v => !v); setMenu(null); }}
-            className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
+          <motion.button
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={e => { e.stopPropagation(); setShowEmoji(v => !v); setMenu(null); }}
+            className="w-7 h-7 flex items-center justify-center rounded-full"
             style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
-            title="React"
           >
-            <Smile size={14} />
-          </button>
+            <Smile size={13} />
+          </motion.button>
         )}
-        <button
+        <motion.button
+          whileHover={{ scale: 1.15 }}
+          whileTap={{ scale: 0.9 }}
           onClick={openMenuFromBtn}
-          className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
+          className="w-7 h-7 flex items-center justify-center rounded-full"
           style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
-          title="More"
         >
-          <MoreHorizontal size={14} />
-        </button>
+          <MoreHorizontal size={13} />
+        </motion.button>
       </div>
 
-      <div className={`relative max-w-[68%] flex flex-col ${isOut ? "items-end" : "items-start"}`}>
+      <div className={`relative max-w-[72%] flex flex-col ${isOut ? "items-end" : "items-start"}`}>
 
-        {/* Emoji quick picker — floats above bubble */}
+        {/* Emoji quick-picker */}
         <AnimatePresence>
           {showEmoji && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.85, y: 4 }}
+              initial={{ opacity: 0, scale: 0.8, y: 6 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              transition={{ duration: 0.12 }}
-              className={`absolute -top-11 z-30 flex gap-1 ${isOut ? "right-0" : "left-0"}`}
+              exit={{ opacity: 0, scale: 0.8, y: 6 }}
+              transition={{ duration: 0.15, ease: [0.34, 1.56, 0.64, 1] }}
+              className={`absolute -top-12 z-30 flex gap-0.5 px-2 py-1.5 ${isOut ? "right-0" : "left-0"}`}
               style={{
                 background: "var(--surface)",
                 border: "1px solid var(--border)",
                 borderRadius: 99,
-                padding: "4px 8px",
                 boxShadow: "var(--shadow-elevated)",
               }}
             >
@@ -159,7 +154,7 @@ export function MessageBubble({
                 <button
                   key={emoji}
                   onClick={() => { onReact?.(emoji); setShowEmoji(false); }}
-                  className="text-lg hover:scale-125 transition-transform w-8 h-8 flex items-center justify-center rounded-full"
+                  className="text-lg hover:scale-130 transition-transform w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10"
                 >
                   {emoji}
                 </button>
@@ -168,29 +163,54 @@ export function MessageBubble({
           )}
         </AnimatePresence>
 
-        {/* Bubble */}
+        {/* ── BUBBLE ── */}
         <div
-          className={`rounded-2xl relative ${
-            isOut ? "themed-msg-out rounded-br-sm" : "themed-msg-in rounded-bl-sm"
-          } ${editing ? "w-64" : ""} ${mediaUrl && !content ? "p-0 overflow-hidden" : "px-4 py-2.5"}`}
+          className={`relative ${editing ? "w-72" : ""}`}
+          style={
+            isOut ? {
+              /* Sent: gradient fill, no tail — iMessage Pro style */
+              background: "var(--msg-out-bg)",
+              boxShadow: "var(--msg-out-shadow)",
+              color: "var(--msg-out-text)",
+              borderRadius: hasOnlyMedia ? "18px" : "20px 20px 5px 20px",
+              padding: hasOnlyMedia ? "0" : "10px 14px 8px",
+              overflow: hasOnlyMedia ? "hidden" : undefined,
+            } : {
+              /* Received: frosted glass + left accent bar */
+              background: "var(--msg-in-bg)",
+              border: "1px solid var(--msg-in-border)",
+              borderLeft: "3px solid var(--accent-purple)",
+              backdropFilter: "blur(8px)",
+              color: "var(--msg-in-text)",
+              borderRadius: hasOnlyMedia ? "18px" : "20px 20px 20px 5px",
+              padding: hasOnlyMedia ? "0" : "10px 14px 8px",
+              overflow: hasOnlyMedia ? "hidden" : undefined,
+            }
+          }
         >
           {replyTo && (
-            <div className={mediaUrl && !content ? "px-4 pt-3" : "mb-2"}>
+            <div className="mb-2">
               <ReplyQuote authorName={replyTo.authorName} content={replyTo.content} isOutbound={isOut} />
             </div>
           )}
 
+          {/* Media */}
           {mediaUrl && (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(mediaUrl) ? (
-            <video src={mediaUrl} controls className="max-w-full max-h-64 block rounded-lg" style={{ minWidth: 120 }} />
+            <video src={mediaUrl} controls className="max-w-full max-h-64 block" style={{ minWidth: 120, borderRadius: hasOnlyMedia ? "18px" : "12px", display: "block" }} />
           ) : (
             <a href={mediaUrl} target="_blank" rel="noopener noreferrer">
-              <img src={mediaUrl} alt="media" className="max-w-full max-h-64 object-cover block" style={{ minWidth: 120 }}
-                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <img
+                src={mediaUrl} alt="media"
+                className="max-w-full max-h-64 object-cover block"
+                style={{ minWidth: 120, borderRadius: hasOnlyMedia ? "18px" : "10px" }}
+                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
             </a>
           ))}
 
+          {/* Text / Edit */}
           {editing ? (
-            <div className="flex flex-col gap-2 p-1">
+            <div className="flex flex-col gap-2">
               <textarea
                 ref={editRef}
                 value={editText}
@@ -204,100 +224,104 @@ export function MessageBubble({
                 rows={2}
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setEditing(false)} className="text-[11px] opacity-70 hover:opacity-100 px-2">Cancel</button>
-                <button onClick={saveEdit} className="text-[11px] font-bold px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }}>Save</button>
+                <button onClick={() => setEditing(false)} className="text-[11px] opacity-60 hover:opacity-100 px-2">Cancel</button>
+                <button onClick={saveEdit} className="text-[11px] font-bold px-3 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }}>Save</button>
               </div>
             </div>
-          ) : (
-            content && (
-              <div className={`text-[15px] leading-relaxed whitespace-pre-wrap ${mediaUrl ? "px-4 pt-2 pb-1" : ""}`}>
-                {content}
-              </div>
-            )
-          )}
+          ) : content ? (
+            <p className={`text-[15px] leading-relaxed whitespace-pre-wrap ${mediaUrl ? "px-4 pt-2 pb-1" : ""}`}>
+              {content}
+            </p>
+          ) : null}
 
-          {/* Time + tick */}
+          {/* Time + tick — inside bubble, bottom right */}
           {!editing && (
-            <div className={`flex items-center gap-1 text-[11px] mt-0.5
-              ${mediaUrl && !content ? "px-3 pb-2 pt-1" : ""}
-              ${isOut ? "text-white/60 justify-end" : "themed-text-3 justify-end"}`}
+            <div
+              className={`flex items-center gap-1 mt-1 select-none ${
+                hasOnlyMedia ? "absolute bottom-2 right-2 bg-black/40 rounded-full px-1.5 py-0.5" : ""
+              }`}
+              style={{ justifyContent: "flex-end" }}
             >
-              <span>{time}</span>
+              <span
+                className="text-[11px]"
+                style={{ color: isOut ? "rgba(255,255,255,0.55)" : "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}
+              >
+                {time}
+              </span>
               {isOut && (
-                <span className="flex items-center">
-                  {status === "sending"   && <Check size={13} className="opacity-40" />}
-                  {status === "sent"      && <Check size={13} />}
-                  {status === "delivered" && <CheckCheck size={13} className="opacity-80" />}
-                  {status === "read"      && <CheckCheck size={13} style={{ color: "#38bdf8" }} />}
+                <span style={{ color: "rgba(255,255,255,0.7)" }}>
+                  <TickIcon status={status} />
                 </span>
               )}
             </div>
           )}
         </div>
 
-        {/* Reaction pills */}
+        {/* Reactions */}
         {reactions.length > 0 && (
-          <div className={`flex flex-wrap gap-1 mt-1 ${isOut ? "-mr-1" : "-ml-1"}`}>
-            {reactions.map((r, i) => (
-              <ReactionPill key={i} emoji={r.emoji} count={r.count} active={r.active} onClick={() => onReact?.(r.emoji)} />
+          <div className={`flex flex-wrap gap-1 mt-1 ${isOut ? "justify-end" : "justify-start"}`}>
+            {reactions.map(r => (
+              <ReactionPill
+                key={r.emoji}
+                emoji={r.emoji}
+                count={r.count}
+                active={r.active}
+                onClick={() => onReact?.(r.emoji)}
+              />
             ))}
           </div>
         )}
       </div>
 
-      {/* Context / ⋯ menu — viewport-clamped fixed position */}
+      {/* Context menu portal */}
       <AnimatePresence>
-        {menu && (
+        {(menu || showEmoji) && (menu) && (
           <motion.div
             ref={menuRef}
-            initial={{ opacity: 0, scale: 0.92, y: menu.above ? -6 : 6 }}
+            initial={{ opacity: 0, scale: 0.92, y: menu.above ? 6 : -6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.12, ease: "easeOut" }}
-            className="fixed z-[60] rounded-2xl overflow-hidden"
+            transition={{ duration: 0.15 }}
+            className="fixed z-50 py-1 rounded-2xl overflow-hidden"
             style={{
-              top: menu.above ? menu.y : menu.y,
               left: menu.x,
-              transform: menu.above ? "translateY(-100%)" : "translateY(8px)",
+              [menu.above ? "bottom" : "top"]: menu.above ? window.innerHeight - menu.y + 4 : menu.y + 4,
               width: MENU_W,
-              background: "var(--surface)",
+              background: "var(--surface-elevated, var(--surface))",
               border: "1px solid var(--border)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)",
+              boxShadow: "var(--shadow-elevated)",
             }}
           >
-            {/* Quick emoji row */}
-            <div className="flex gap-0.5 px-2.5 py-2" style={{ borderBottom: "1px solid var(--border)" }}>
+            {/* Emoji row */}
+            <div className="flex items-center justify-around px-3 py-2 border-b" style={{ borderColor: "var(--border)" }}>
               {EMOJIS.map(emoji => (
                 <button
                   key={emoji}
                   onClick={() => { onReact?.(emoji); closeAll(); }}
-                  className="text-xl hover:scale-125 transition-transform flex-1 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--row-hover-bg)]"
+                  className="text-xl hover:scale-130 transition-transform w-9 h-9 flex items-center justify-center rounded-full hover:bg-black/10"
                 >
                   {emoji}
                 </button>
               ))}
             </div>
 
-            {/* Action list */}
-            <div className="py-1">
-              {actions.map(({ icon: Icon, label, action, danger }) => (
-                <button
-                  key={label}
-                  onClick={action}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--row-hover-bg)]"
-                  style={{ color: danger ? "var(--danger)" : "var(--text-primary)" }}
-                >
-                  <Icon size={15} style={{ color: danger ? "var(--danger)" : "var(--text-muted)" }} />
-                  {label}
-                </button>
-              ))}
-              {actions.length === 0 && (
-                <p className="px-4 py-2.5 text-sm themed-text-3">No actions available</p>
-              )}
-            </div>
+            {/* Actions */}
+            {actions.map(({ icon: Icon, label, action, danger }) => (
+              <button
+                key={label}
+                onClick={action}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors text-left"
+                style={{ color: danger ? "var(--danger)" : "var(--text-primary)" }}
+                onMouseEnter={e => (e.currentTarget.style.background = danger ? "rgba(239,68,68,0.08)" : "var(--row-hover-bg)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <Icon size={15} />
+                {label}
+              </button>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }

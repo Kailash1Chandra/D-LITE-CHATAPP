@@ -114,23 +114,39 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
   return (
     <div className="relative">
       <div
-        className="h-[72px] shrink-0 border-b themed-border px-6 flex items-center justify-between sticky top-0 z-10"
-        style={{ background: "var(--header-bg)", borderColor: "var(--header-border)" }}
+        className="h-[64px] shrink-0 border-b px-5 flex items-center justify-between sticky top-0 z-10"
+        style={{
+          background: "var(--header-bg)",
+          borderColor: "var(--header-border)",
+          backdropFilter: "blur(12px)",
+        }}
       >
         {/* Left — clickable avatar+name opens profile */}
         <button
-          className="flex items-center gap-4 cursor-pointer group text-left"
+          className="flex items-center gap-3 cursor-pointer group text-left min-w-0"
           onClick={() => setShowProfile(v => !v)}
         >
-          <Avatar src={user.avatarUrl} initials={user.initials} online={user.isOnline} verified={user.isVerified} size="md" />
-          <div>
-            <h3 className="font-bold themed-text group-hover:text-[var(--brand-text)] transition-colors">
+          <div className="relative shrink-0">
+            <Avatar src={user.avatarUrl} initials={user.initials} online={false} verified={user.isVerified} size="md" />
+            {/* Custom online dot for cleaner look */}
+            {user.isOnline && (
+              <span
+                className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full border-2"
+                style={{ background: "var(--success)", borderColor: "var(--header-bg)" }}
+              />
+            )}
+          </div>
+          <div className="min-w-0">
+            <h3
+              className="text-[15px] font-bold truncate transition-colors group-hover:opacity-80"
+              style={{ color: "var(--text-primary)" }}
+            >
               {user.name}
             </h3>
-            <div className="text-xs themed-text-2 flex items-center h-4">
+            <div className="text-[12px] flex items-center gap-1 h-4">
               {isTyping ? (
-                <div className="flex items-center gap-1.5" style={{ color: "var(--brand-text)" }}>
-                  <TypingDots /> <span className="italic">typing...</span>
+                <div className="flex items-center gap-1" style={{ color: "var(--accent-purple)" }}>
+                  <TypingDots /> <span className="italic">typing…</span>
                 </div>
               ) : (
                 <span style={{ color: user.isOnline ? "var(--success)" : "var(--text-muted)" }}>
@@ -142,18 +158,45 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
         </button>
 
         {/* Right — call buttons + triple dot */}
-        <div className="flex items-center gap-2">
-          <IconButton size="md" variant="ghost"
-            className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]"
-            tooltip="Audio Call" onClick={() => startCall("audio")}>
-            <Phone size={20} />
-          </IconButton>
-          <IconButton size="md" variant="ghost"
-            className="themed-text-2 hover:text-[var(--brand-text)] hover:bg-[var(--row-hover-bg)]"
-            tooltip="Video Call" onClick={() => startCall("video")}>
-            <Video size={20} />
-          </IconButton>
-          <div className="w-px h-6 mx-1" style={{ background: "var(--border)" }} />
+        <div className="flex items-center gap-1">
+          {/* Audio call pill button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => startCall("audio")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors"
+            style={{ color: "var(--text-muted)", background: "transparent" }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = "var(--accent-purple)";
+              e.currentTarget.style.background = "var(--row-hover-bg)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = "var(--text-muted)";
+              e.currentTarget.style.background = "transparent";
+            }}
+            title="Audio Call"
+          >
+            <Phone size={17} />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => startCall("video")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors"
+            style={{ color: "var(--text-muted)", background: "transparent" }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = "var(--accent-purple)";
+              e.currentTarget.style.background = "var(--row-hover-bg)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = "var(--text-muted)";
+              e.currentTarget.style.background = "transparent";
+            }}
+            title="Video Call"
+          >
+            <Video size={17} />
+          </motion.button>
+          <div className="w-px h-5 mx-1" style={{ background: "var(--border)" }} />
 
           {/* ⋯ menu */}
           <div ref={menuRef} className="relative">

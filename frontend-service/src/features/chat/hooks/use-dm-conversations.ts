@@ -88,15 +88,36 @@ export function useDMConversations() {
   }, [])
 
   useEffect(() => {
-    load()
-
     const supabase = createClient()
-    const channel = supabase
-      .channel(`dm_list_${Math.random().toString(36).slice(2)}`)
+    const suffix = Math.random().toString(36).slice(2)
+    let activityChannel: ReturnType<typeof supabase.channel> | null = null
+
+    // DB changes — picks up INSERT (new messages). UPDATE needs REPLICA IDENTITY FULL.
+    const dbChannel = supabase
+      .channel(`dm_list_${suffix}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, load)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Separate setup for the activity broadcast (needs async userId)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      activityChannel = supabase
+        .channel(`dlite-user-${user.id}-activity`)
+        .on("broadcast", { event: "chat-read" }, ({ payload }) => {
+          // Instantly zero unread for the peer we just read — no DB round-trip needed
+          setConversations(prev =>
+            prev.map(c => c.id === payload.peerId ? { ...c, unreadCount: 0 } : c)
+          )
+        })
+        .subscribe()
+    })
+
+    load()
+
+    return () => {
+      supabase.removeChannel(dbChannel)
+      if (activityChannel) supabase.removeChannel(activityChannel)
+    }
   }, [load])
 
   return { conversations, loading }

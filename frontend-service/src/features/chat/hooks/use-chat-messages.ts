@@ -84,12 +84,18 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
       .neq("status", "read")
       .select("id")
 
-    // Broadcast read receipt so sender sees double tick instantly —
-    // works WITHOUT REPLICA IDENTITY FULL (which UPDATE events require)
     if (updated && updated.length > 0) {
+      // Tell sender their messages were read (double tick)
       supabase
         .channel(`read-receipt-${[user.id, peerId].sort().join("-")}`)
         .send({ type: "broadcast", event: "read", payload: { readBy: user.id } })
+        .catch(() => {})
+
+      // Tell OUR OWN sidebar to instantly clear the unread badge —
+      // without this the badge stays until REPLICA IDENTITY FULL fires an UPDATE event
+      supabase
+        .channel(`dlite-user-${user.id}-activity`)
+        .send({ type: "broadcast", event: "chat-read", payload: { peerId } })
         .catch(() => {})
     }
   }, [peerId])

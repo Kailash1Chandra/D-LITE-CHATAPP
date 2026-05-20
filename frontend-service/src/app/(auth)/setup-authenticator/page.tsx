@@ -187,13 +187,15 @@ export default function SetupAuthenticatorPage() {
                 style={{ background: "var(--surface)", border: "1.5px solid var(--border)" }}
               >
                 {qrSvg && (
-                  <div className="w-52 h-52 rounded-2xl overflow-hidden bg-white p-3 flex items-center justify-center shadow-lg">
-                    <img
-                      src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}`}
-                      alt="2FA QR Code"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
+                  <div
+                    className="w-56 h-56 rounded-2xl overflow-hidden bg-white p-3 shadow-lg"
+                    dangerouslySetInnerHTML={{
+                      __html: qrSvg.replace(
+                        "<svg",
+                        '<svg style="width:100%;height:100%;display:block;"'
+                      ),
+                    }}
+                  />
                 )}
                 <div className="text-center">
                   <p className="text-xs font-semibold themed-text-2 uppercase tracking-wide mb-2">Can&apos;t scan? Use this key</p>

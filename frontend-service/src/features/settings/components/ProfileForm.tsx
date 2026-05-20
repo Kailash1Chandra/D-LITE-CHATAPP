@@ -78,12 +78,27 @@ export function ProfileForm({ initialName, initialUsername, initialEmail, initia
     setError(null);
     setSaved(false);
     const supabase = createClient();
+
+    // 1. Update auth user metadata (for current user's own session)
     const { error: err } = await supabase.auth.updateUser({
       email: email !== initialEmail ? email : undefined,
       data: { full_name: name, username, bio, avatar_url: avatarUrl },
     });
-    if (err) setError(err.message);
-    else { setSaved(true); setTimeout(() => setSaved(false), 3000); }
+    if (err) { setError(err.message); setLoading(false); return; }
+
+    // 2. Also sync to the profiles table so OTHER users can see the updated avatar
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profiles").update({
+        display_name: name,
+        username,
+        bio,
+        avatar_url: avatarUrl ?? null,
+      }).eq("id", user.id);
+    }
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
     setLoading(false);
   }
 

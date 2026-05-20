@@ -105,14 +105,53 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 340, damping: 32 }}
             className="absolute right-0 top-0 bottom-0 z-30 flex flex-col overflow-hidden"
-            style={{ width: 320, background: "var(--surface)", borderLeft: "1px solid var(--border)" }}
+            style={{
+              width: 320,
+              background: "var(--surface-elevated)",
+              backdropFilter: "blur(24px) saturate(180%)",
+              WebkitBackdropFilter: "blur(24px) saturate(180%)",
+              borderLeft: "1px solid var(--border)",
+              boxShadow: "-8px 0 32px rgba(0,0,0,0.3)",
+            }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b themed-border">
-              <span className="font-bold themed-text">User Info</span>
-              <button onClick={onClose} className="themed-text-3 hover:themed-text transition-colors">
-                <X size={18} />
-              </button>
+            <div
+              className="flex items-center justify-between px-5 py-4 border-b"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <span className="font-bold" style={{ color: "var(--text-primary)" }}>User Info</span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={onAudioCall}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: "var(--text-muted)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--row-hover-bg)"; (e.currentTarget as HTMLElement).style.color = "var(--brand-text)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+                  title="Audio Call"
+                >
+                  <Phone size={16} />
+                </button>
+                <button
+                  onClick={onVideoCall}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: "var(--text-muted)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--row-hover-bg)"; (e.currentTarget as HTMLElement).style.color = "var(--brand-text)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+                  title="Video Call"
+                >
+                  <Video size={16} />
+                </button>
+                <div className="w-px h-4 mx-1" style={{ background: "var(--border)" }} />
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: "var(--text-muted)" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--row-hover-bg)"; (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -123,8 +162,7 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
               ) : profile ? (
                 <>
                   {/* Avatar + name */}
-                  <div className="flex flex-col items-center py-8 px-5 border-b themed-border"
-                    style={{ background: "linear-gradient(to bottom, var(--surface-2, var(--surface)), var(--surface))" }}>
+                  <div className="flex flex-col items-center py-8 px-5 border-b" style={{ borderColor: "var(--border)" }}>
                     <div className="relative mb-4">
                       <Avatar initials={initials} size="xl" src={profile.avatarUrl} />
                       <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full border-2"
@@ -140,25 +178,28 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex items-center justify-center gap-4 py-5 border-b themed-border">
+                  <div className="flex items-center justify-center gap-4 py-5 border-b" style={{ borderColor: "var(--border)" }}>
                     {[
                       { icon: Phone, label: "Audio", action: onAudioCall },
                       { icon: Video, label: "Video", action: onVideoCall },
                     ].map(({ icon: Icon, label, action }) => (
                       <button key={label} onClick={action}
-                        className="flex flex-col items-center gap-1.5">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center"
-                          style={{ background: "var(--surface-2, var(--surface))", border: "1px solid var(--border)" }}>
-                          <Icon size={20} style={{ color: "var(--brand-text)" }} />
+                        className="flex flex-col items-center gap-1.5 group">
+                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors"
+                          style={{ background: "rgba(128,128,128,0.12)", border: "1px solid var(--border)" }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--row-hover-bg)"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(128,128,128,0.12)"}
+                        >
+                          <Icon size={18} style={{ color: "var(--brand-text)" }} />
                         </div>
-                        <span className="text-xs themed-text-3">{label}</span>
+                        <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{label}</span>
                       </button>
                     ))}
                   </div>
 
                   {/* Bio */}
                   {profile.bio && (
-                    <div className="px-5 py-4 border-b themed-border">
+                    <div className="px-5 py-4 border-b">
                       <div className="flex items-start gap-3">
                         <Info size={16} className="mt-0.5 shrink-0" style={{ color: "var(--text-muted)" }} />
                         <div>
@@ -171,7 +212,7 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
 
                   {/* Username */}
                   {profile.username && (
-                    <div className="px-5 py-4 border-b themed-border">
+                    <div className="px-5 py-4 border-b">
                       <div className="flex items-center gap-3">
                         <AtSign size={16} style={{ color: "var(--text-muted)" }} />
                         <div>
@@ -184,7 +225,7 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
 
                   {/* Joined */}
                   {profile.joinedAt && (
-                    <div className="px-5 py-4 border-b themed-border">
+                    <div className="px-5 py-4 border-b">
                       <div className="flex items-center gap-3">
                         <Calendar size={16} style={{ color: "var(--text-muted)" }} />
                         <div>

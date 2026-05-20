@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { applyPalette } from "@/features/settings/components/ColorPicker";
 
 export type Theme = "light" | "dark";
 
@@ -16,8 +17,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("dlite-theme") as Theme | null;
-      if (saved === "light" || saved === "dark") setThemeState(saved);
+      const savedTheme = localStorage.getItem("dlite-theme") as Theme | null;
+      if (savedTheme === "light" || savedTheme === "dark") setThemeState(savedTheme);
+      // Restore accent palette
+      const savedPalette = localStorage.getItem("dlite-palette");
+      if (savedPalette) applyPalette(savedPalette);
     } catch {}
   }, []);
 

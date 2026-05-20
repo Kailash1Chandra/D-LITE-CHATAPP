@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { Greeting } from "@/features/dashboard/components/Greeting";
 import { StatRow } from "@/features/dashboard/components/StatRow";
-import { RecentChatsGrid } from "@/features/dashboard/components/RecentChatsGrid";
 import { RecentCallsServer } from "@/features/dashboard/components/RecentCallsServer";
 import { FavouriteChats } from "@/features/dashboard/components/FavouriteChats";
 import { getUser } from "@/core/auth/get-user";
@@ -58,14 +57,9 @@ export default async function DashboardPage() {
         <StatRow />
       </Suspense>
 
-      {/* Favourite chats — client component, renders only if user has favourites */}
-      <FavouriteChats />
-
-      {/* Chats + Calls stream in parallel */}
+      {/* Favourite Chats + Recent Calls */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4">
-        <Suspense fallback={<CardSkeleton rows={5} />}>
-          <RecentChatsGrid />
-        </Suspense>
+        <FavouriteChats />
         <Suspense fallback={<CardSkeleton rows={5} />}>
           <RecentCallsServer />
         </Suspense>

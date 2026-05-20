@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Phone, Video, PhoneMissed, PhoneCall, PhoneIncoming, PhoneOutgoing, Loader2 } from "lucide-react";
+import { Phone, Video, PhoneMissed, PhoneCall, PhoneIncoming, PhoneOutgoing, Loader2, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/core/auth/supabase-client";
@@ -95,19 +95,44 @@ function CallRow({ call }: { call: CallRecord }) {
         </div>
       </div>
 
-      <Link href={`/chat/${call.peer.id}`}>
-        <button
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110"
-          style={{
-            background: "var(--surface-2, var(--surface))",
-            border: "1px solid var(--border)",
-            color: "var(--brand-500, var(--brand-text))",
-          }}
-          title={`Call ${call.peer.name}`}
-        >
-          <PhoneCall size={14} />
-        </button>
-      </Link>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* Chat */}
+        <Link href={`/chat/${call.peer.id}`}>
+          <button
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+            style={{ background: "var(--row-hover-bg)", color: "var(--text-muted)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--brand-text)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+            title="Open chat"
+          >
+            <MessageSquare size={14} />
+          </button>
+        </Link>
+        {/* Audio call */}
+        <Link href={`/chat/${call.peer.id}`}>
+          <button
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+            style={{ background: "var(--row-hover-bg)", color: "var(--text-muted)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--brand-text)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+            title="Audio call"
+          >
+            <PhoneCall size={14} />
+          </button>
+        </Link>
+        {/* Video call */}
+        <Link href={`/chat/${call.peer.id}`}>
+          <button
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+            style={{ background: "var(--row-hover-bg)", color: "var(--text-muted)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--brand-text)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+            title="Video call"
+          >
+            <Video size={14} />
+          </button>
+        </Link>
+      </div>
     </motion.div>
   );
 }

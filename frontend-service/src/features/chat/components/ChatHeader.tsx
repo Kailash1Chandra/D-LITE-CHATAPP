@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Phone, Video, MoreVertical, Download, VolumeX, Volume2, Lock, ShieldOff, Ban } from "lucide-react";
+import { Phone, Video, MoreVertical, Download, VolumeX, Volume2, Lock, ShieldOff, Ban, Star } from "lucide-react";
 import { Avatar } from "@/shared/components/Avatar";
 import { IconButton } from "@/shared/components/IconButton";
 import { TypingDots } from "@/shared/components/TypingDots";
@@ -36,16 +36,18 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Chat flags
-  const [muted,      setMutedState]    = useState(false);
-  const [blocked,    setBlockedState]  = useState(false);
+  const [muted,      setMutedState]      = useState(false);
+  const [blocked,    setBlockedState]    = useState(false);
   const [restricted, setRestrictedState] = useState(false);
-  const [locked,     setLockedState]   = useState(false);
+  const [locked,     setLockedState]     = useState(false);
+  const [favourite,  setFavouriteState]  = useState(false);
 
   useEffect(() => {
     setMutedState(getFlag(user.id, "muted"));
     setBlockedState(getFlag(user.id, "blocked"));
     setRestrictedState(getFlag(user.id, "restricted"));
     setLockedState(getFlag(user.id, "locked"));
+    setFavouriteState(getFlag(user.id, "favourite"));
   }, [user.id]);
 
   useEffect(() => {
@@ -57,12 +59,22 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
     return () => document.removeEventListener("mousedown", h);
   }, [showMenu]);
 
-  function toggle(key: "muted" | "blocked" | "restricted" | "locked") {
-    const map = { muted, blocked, restricted, locked };
-    const setMap = { muted: setMutedState, blocked: setBlockedState, restricted: setRestrictedState, locked: setLockedState };
+  function toggle(key: "muted" | "blocked" | "restricted" | "locked" | "favourite") {
+    const map = { muted, blocked, restricted, locked, favourite };
+    const setMap = { muted: setMutedState, blocked: setBlockedState, restricted: setRestrictedState, locked: setLockedState, favourite: setFavouriteState };
     const newVal = !map[key];
     setMap[key](newVal);
     setFlag(user.id, key, newVal);
+    // Keep global favourites list in sync
+    if (key === "favourite") {
+      try {
+        const existing: string[] = JSON.parse(localStorage.getItem("dlite_favourites") ?? "[]");
+        const updated = newVal
+          ? [...new Set([...existing, user.id])]
+          : existing.filter(id => id !== user.id);
+        localStorage.setItem("dlite_favourites", JSON.stringify(updated));
+      } catch {}
+    }
     setShowMenu(false);
   }
 
@@ -83,6 +95,13 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
   }
 
   const menuItems = [
+    {
+      icon: Star,
+      label: favourite ? "Remove from Favourites" : "Add to Favourites",
+      action: () => toggle("favourite" as any),
+      danger: false,
+      active: favourite,
+    },
     {
       icon: Download, label: "Export Chat",
       action: () => { setShowMenu(false); router.push("/settings/backup"); },

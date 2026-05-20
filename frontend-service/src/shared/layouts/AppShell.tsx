@@ -1,4 +1,4 @@
-import { DockNav } from "@/shared/components/DockNav";
+import { TopNav } from "@/shared/components/TopNav";
 import { AuroraBackground } from "@/shared/components/AuroraBackground";
 import { getUser, getInitials } from "@/core/auth/get-user";
 import { CallListener } from "@/features/calls/components/CallListener";
@@ -11,22 +11,22 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="h-screen w-full overflow-hidden"
+      className="h-screen w-full overflow-hidden flex flex-col"
       style={{ background: "var(--canvas-bg)", position: "relative" }}
     >
       {/* Aurora orbs — fixed z-0 */}
       <AuroraBackground />
 
-      {/* Main content — fills entire width now, dock is floating */}
+      {/* Top navigation bar */}
+      <TopNav userInitials={getInitials(fullName)} userAvatarUrl={avatarUrl} />
+
+      {/* Page content — fills remaining height */}
       <main
-        className="h-full overflow-y-auto"
-        style={{ position: "relative", zIndex: 5, paddingBottom: 96 }}
+        className="flex-1 overflow-hidden"
+        style={{ position: "relative", zIndex: 5 }}
       >
         {children}
       </main>
-
-      {/* Floating bottom dock — fixed z-100 */}
-      <DockNav userInitials={getInitials(fullName)} userAvatarUrl={avatarUrl} />
 
       <CallListener />
       <KeepAlive />

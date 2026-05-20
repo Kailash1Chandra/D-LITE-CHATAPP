@@ -41,7 +41,9 @@ export default function SetupAuthenticatorPage() {
     // Check if user is authenticated first
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setError("Session expired — please log in again.");
+      setError(
+        "Not logged in — if you just registered, please confirm your email first (check your inbox), then log in and set up 2FA from Settings → Security → 2FA."
+      );
       setLoading(false);
       return;
     }
@@ -185,10 +187,13 @@ export default function SetupAuthenticatorPage() {
                 style={{ background: "var(--surface)", border: "1.5px solid var(--border)" }}
               >
                 {qrSvg && (
-                  <div
-                    className="w-48 h-48 rounded-xl overflow-hidden bg-white p-2"
-                    dangerouslySetInnerHTML={{ __html: qrSvg }}
-                  />
+                  <div className="w-52 h-52 rounded-2xl overflow-hidden bg-white p-3 flex items-center justify-center shadow-lg">
+                    <img
+                      src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}`}
+                      alt="2FA QR Code"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
                 )}
                 <div className="text-center">
                   <p className="text-xs font-semibold themed-text-2 uppercase tracking-wide mb-2">Can&apos;t scan? Use this key</p>

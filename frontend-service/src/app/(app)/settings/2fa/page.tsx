@@ -195,11 +195,16 @@ export default function TwoFactorAuthPage() {
               </p>
             </div>
 
-            {/* QR */}
+            {/* QR — use img+dataURL so SVG fills container properly */}
             <div className="flex justify-center">
               {qrSvg && (
-                <div className="w-48 h-48 rounded-2xl overflow-hidden bg-white p-2"
-                  dangerouslySetInnerHTML={{ __html: qrSvg }} />
+                <div className="w-52 h-52 rounded-2xl overflow-hidden bg-white p-3 flex items-center justify-center shadow-lg">
+                  <img
+                    src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg)}`}
+                    alt="2FA QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               )}
             </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Plus, Smile, Send, X, FileText, Loader2,
   Image, Film, BarChart2, Paperclip,
@@ -259,12 +259,19 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
   }
 
   const isImage = pendingFile?.type.startsWith("image/");
-  const isVid   = pendingFile?.type.startsWith("video/");
   const isVideo = pendingFile?.type.startsWith("video/");
   const canSend = (text.trim().length > 0 || !!pendingFile) && !uploading;
 
   return (
-    <div className="relative p-3 md:p-4 themed-surface border-t themed-border flex flex-col gap-2">
+    <div
+      className="relative p-3 md:p-4 flex flex-col gap-2"
+      style={{
+        background: "var(--header-bg)",
+        borderTop: "1px solid var(--border)",
+        backdropFilter: "blur(24px) saturate(180%)",
+        WebkitBackdropFilter: "blur(24px) saturate(180%)",
+      }}
+    >
       {uploadErr && (
         <p className="text-xs px-1" style={{ color: "var(--danger)" }}>
           ⚠ {uploadErrMsg}

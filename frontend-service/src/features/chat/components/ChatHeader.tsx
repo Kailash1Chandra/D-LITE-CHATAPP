@@ -118,7 +118,8 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
         style={{
           background: "var(--header-bg)",
           borderColor: "var(--header-border)",
-          backdropFilter: "blur(12px)",
+          backdropFilter: "blur(24px) saturate(180%)",
+          WebkitBackdropFilter: "blur(24px) saturate(180%)",
         }}
       >
         {/* Left — clickable avatar+name opens profile */}

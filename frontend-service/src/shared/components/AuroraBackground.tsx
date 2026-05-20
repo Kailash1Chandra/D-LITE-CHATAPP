@@ -1,28 +1,54 @@
 "use client";
 
-import React from "react";
-
-export function AuroraBackground({ children }: { children?: React.ReactNode }) {
+/* Fixed aurora orbs that shine through all glass panels.
+   In light mode, aurora vars are near-transparent so orbs are invisible. */
+export function AuroraBackground() {
   return (
-    <div className="relative w-full h-full overflow-hidden bg-canvas">
-      {/* Background blobs */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply blur-3xl">
-        <div
-          className="absolute top-0 -left-10 w-96 h-96 bg-brand-400 rounded-full mix-blend-multiply filter blur-3xl opacity-70"
-          style={{ animation: "blob-float 7s infinite" }}
-        />
-        <div
-          className="absolute top-0 -right-10 w-96 h-96 bg-accent-pink rounded-full mix-blend-multiply filter blur-3xl opacity-70"
-          style={{ animation: "blob-float 7s infinite", animationDelay: "2s" }}
-        />
-        <div
-          className="absolute -bottom-20 left-40 w-96 h-96 bg-accent-purple rounded-full mix-blend-multiply filter blur-3xl opacity-70"
-          style={{ animation: "blob-float 7s infinite", animationDelay: "4s" }}
-        />
-      </div>
+    <div
+      aria-hidden
+      style={{
+        position: "fixed", inset: 0,
+        overflow: "hidden", pointerEvents: "none", zIndex: 0,
+      }}
+    >
+      {/* Violet — top left */}
+      <div style={{
+        position: "absolute", top: "-5%", left: "5%",
+        width: 800, height: 800, borderRadius: "50%",
+        background: "radial-gradient(circle, var(--aurora-1) 0%, transparent 70%)",
+        filter: "blur(72px)",
+        animation: "aurora-1 28s ease-in-out infinite",
+      }} />
 
-      {/* Content */}
-      <div className="relative z-10 w-full h-full">{children}</div>
+      {/* Cyan — right center */}
+      <div style={{
+        position: "absolute", top: "25%", right: "-5%",
+        width: 650, height: 650, borderRadius: "50%",
+        background: "radial-gradient(circle, var(--aurora-2) 0%, transparent 70%)",
+        filter: "blur(80px)",
+        animation: "aurora-2 36s ease-in-out infinite",
+        animationDelay: "-14s",
+      }} />
+
+      {/* Emerald — bottom center */}
+      <div style={{
+        position: "absolute", bottom: "-5%", left: "28%",
+        width: 600, height: 600, borderRadius: "50%",
+        background: "radial-gradient(circle, var(--aurora-3) 0%, transparent 70%)",
+        filter: "blur(90px)",
+        animation: "aurora-3 44s ease-in-out infinite",
+        animationDelay: "-25s",
+      }} />
+
+      {/* Pink — bottom left */}
+      <div style={{
+        position: "absolute", bottom: "5%", left: "-5%",
+        width: 500, height: 500, borderRadius: "50%",
+        background: "radial-gradient(circle, var(--aurora-4, var(--aurora-1)) 0%, transparent 70%)",
+        filter: "blur(80px)",
+        animation: "aurora-4 52s ease-in-out infinite",
+        animationDelay: "-35s",
+      }} />
     </div>
   );
 }

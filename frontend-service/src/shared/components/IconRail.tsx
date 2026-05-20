@@ -24,11 +24,12 @@ export function IconRail({ userInitials = "DL", userAvatarUrl }: IconRailProps) 
 
   return (
     <nav
-      className="w-[64px] h-screen flex flex-col items-center py-4 shrink-0 z-10"
+      className="w-[64px] h-screen flex flex-col items-center py-4 shrink-0"
       style={{
         background: "var(--rail-bg)",
         borderRight: "1px solid var(--rail-border)",
-        backdropFilter: "blur(12px)",
+        backdropFilter: "blur(24px) saturate(180%)",
+        WebkitBackdropFilter: "blur(24px) saturate(180%)",
       }}
     >
       {/* Logo */}

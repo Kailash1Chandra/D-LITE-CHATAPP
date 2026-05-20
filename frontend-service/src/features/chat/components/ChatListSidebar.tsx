@@ -31,7 +31,12 @@ export function ChatListSidebar() {
     <>
       <div
         className="w-[272px] h-full flex flex-col shrink-0"
-        style={{ borderRight: "1px solid var(--border)", background: "var(--surface)" }}
+        style={{
+          borderRight: "1px solid var(--border)",
+          background: "var(--surface)",
+          backdropFilter: "blur(24px) saturate(180%)",
+          WebkitBackdropFilter: "blur(24px) saturate(180%)",
+        }}
       >
         {/* Header */}
         <div className="px-4 pt-5 pb-3">

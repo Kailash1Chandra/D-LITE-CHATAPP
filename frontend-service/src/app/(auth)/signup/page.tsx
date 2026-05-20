@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mars, Venus, Check, Shield, Lock, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
@@ -57,6 +57,7 @@ export default function SignupPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [enable2fa, setEnable2fa] = useState(false);
+  const enable2faRef = useRef(false); // ref so handleSubmit always reads latest value
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,7 +94,7 @@ export default function SignupPage() {
     if (authError) { setError(authError.message); setLoading(false); return; }
 
     // If 2FA enabled → QR setup, otherwise go straight to dashboard
-    window.location.href = enable2fa ? "/setup-authenticator" : "/dashboard";
+    window.location.href = enable2faRef.current ? "/setup-authenticator" : "/dashboard";
   };
 
 
@@ -272,7 +273,7 @@ export default function SignupPage() {
             <motion.div custom={11} variants={fadeUp} initial="hidden" animate="visible">
               <button
                 type="button"
-                onClick={() => setEnable2fa(v => !v)}
+                onClick={() => setEnable2fa(v => { const next = !v; enable2faRef.current = next; return next; })}
                 className="w-full rounded-2xl border p-4 flex items-center gap-3 text-left transition-all focus:outline-none"
                 style={{
                   background: enable2fa ? "linear-gradient(135deg,rgba(124,58,237,0.08),rgba(6,182,212,0.08))" : "var(--surface)",

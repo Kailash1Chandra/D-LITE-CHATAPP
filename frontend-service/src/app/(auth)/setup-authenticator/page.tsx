@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShieldCheck, Smartphone, Copy, Check, ArrowRight, RefreshCw } from "lucide-react";
+import { Sparkles, ShieldCheck, Smartphone, Copy, Check, ArrowRight, RefreshCw, X } from "lucide-react";
 import { createClient } from "@/core/auth/supabase-client";
 import { AuthSplitVisual } from "@/features/auth/components/AuthSplitVisual";
 import { ThemeToggle } from "@/shared/components/ThemeToggle";
@@ -38,9 +38,21 @@ export default function SetupAuthenticatorPage() {
     setError(null);
     const supabase = createClient();
 
+    // Check if user is authenticated first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError("Session expired — please log in again.");
+      setLoading(false);
+      return;
+    }
+
     const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "D-Lite Authenticator" });
     if (enrollError || !data) {
-      setError(enrollError?.message ?? "Failed to set up authenticator");
+      setError(
+        enrollError?.message?.includes("not enabled")
+          ? "MFA not enabled in Supabase — go to Authentication → Factors → enable TOTP."
+          : (enrollError?.message ?? "Failed to set up authenticator")
+      );
       setLoading(false);
       return;
     }
@@ -227,6 +239,16 @@ export default function SetupAuthenticatorPage() {
                 >
                   Continue <ArrowRight size={15} />
                 </motion.button>
+              </motion.div>
+
+              <motion.div custom={6} variants={fadeUp} initial="hidden" animate="visible" className="flex justify-center mt-2">
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="flex items-center gap-1.5 text-xs font-medium hover:underline transition-opacity hover:opacity-80"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  <X size={12} /> Skip for now — set up 2FA later in Settings
+                </button>
               </motion.div>
             </>
           ) : (

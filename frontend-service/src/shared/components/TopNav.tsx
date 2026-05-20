@@ -126,8 +126,8 @@ export function TopNav({ userInitials = "DL", userAvatarUrl }: TopNavProps) {
         </span>
       </Link>
 
-      {/* Nav items — icon-only default, expand on hover */}
-      <nav className="flex items-stretch gap-1 flex-1 px-3">
+      {/* Nav items — centered, icon-only default, expand on hover */}
+      <nav className="absolute left-1/2 -translate-x-1/2 flex items-stretch gap-1 h-full px-2">
         {navItems.map(item => (
           <NavItem
             key={item.href}
@@ -136,6 +136,9 @@ export function TopNav({ userInitials = "DL", userAvatarUrl }: TopNavProps) {
           />
         ))}
       </nav>
+
+      {/* Spacer so right section stays right */}
+      <div className="flex-1" />
 
       {/* Right section */}
       <div

@@ -235,9 +235,9 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
                   transition={{ duration: 0.12 }}
                   className="absolute right-0 top-full mt-1 rounded-2xl overflow-hidden z-50"
                   style={{
-                    background: "var(--surface)",
+                    background: "var(--surface-elevated)",
                     border: "1px solid var(--border)",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                    boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
                     minWidth: 210,
                   }}
                 >

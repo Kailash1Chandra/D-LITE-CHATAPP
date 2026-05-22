@@ -144,7 +144,7 @@ export function MessageBubble({
               transition={{ duration: 0.15, ease: [0.34, 1.56, 0.64, 1] }}
               className={`absolute -top-12 z-30 flex gap-0.5 px-2 py-1.5 ${isOut ? "right-0" : "left-0"}`}
               style={{
-                background: "var(--surface)",
+                background: "var(--surface-elevated)",
                 border: "1px solid var(--border)",
                 borderRadius: 99,
                 boxShadow: "var(--shadow-elevated)",

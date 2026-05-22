@@ -347,9 +347,9 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className="absolute bottom-full left-0 mb-2 rounded-2xl overflow-hidden z-50"
                 style={{
-                  background: "var(--surface)",
+                  background: "var(--surface-elevated)",
                   border: "1px solid var(--border)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
                   minWidth: 180,
                 }}
               >

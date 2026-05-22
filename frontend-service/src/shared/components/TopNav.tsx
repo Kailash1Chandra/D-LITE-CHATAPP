@@ -49,8 +49,8 @@ function NavItem({
         style={{
           paddingTop: 7,
           paddingBottom: 7,
-          paddingLeft: hovered ? 14 : 10,
-          paddingRight: hovered ? 14 : 10,
+          paddingLeft: isActive || hovered ? 14 : 10,
+          paddingRight: isActive || hovered ? 14 : 10,
           background: isActive
             ? "rgba(124,58,237,0.12)"
             : hovered
@@ -65,11 +65,11 @@ function NavItem({
       >
         <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
 
-        {/* Expanding label */}
+        {/* Label — always visible for active, expands on hover for others */}
         <motion.span
           animate={{
-            maxWidth: hovered ? 120 : 0,
-            opacity: hovered ? 1 : 0,
+            maxWidth: isActive || hovered ? 120 : 0,
+            opacity: isActive || hovered ? 1 : 0,
           }}
           transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="text-[13px] font-semibold whitespace-nowrap overflow-hidden block"

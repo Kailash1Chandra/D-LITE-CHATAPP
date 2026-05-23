@@ -34,11 +34,28 @@ export function CreateGroupModal({ open, onClose }: CreateGroupModalProps) {
       .select()
       .single();
 
-    if (err || !group) { setError(err?.message ?? "Failed to create group"); setLoading(false); return; }
+    if (err || !group) {
+      const msg = err?.message ?? "Failed to create group";
+      setError(msg.includes("violates row-level security")
+        ? "Permission denied. Make sure you're logged in."
+        : msg);
+      setLoading(false);
+      return;
+    }
 
-    await supabase.from("group_members").insert({ group_id: (group as any).id, user_id: user.id, role: "Owner" });
+    const { error: memberErr } = await supabase
+      .from("group_members")
+      .insert({ group_id: (group as any).id, user_id: user.id, role: "Owner" });
 
-    setName(""); setDescription(""); setLoading(false);
+    if (memberErr) {
+      // Group was created but membership failed — delete orphan group and show error
+      await supabase.from("groups").delete().eq("id", (group as any).id);
+      setError("Failed to set up group membership. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    setName(""); setDescription(""); setIsPublic(false); setLoading(false);
     onClose();
     router.push(`/groups/${(group as any).id}`);
   }

@@ -65,6 +65,7 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
     const newVal = !map[key];
     setMap[key](newVal);
     setFlag(user.id, key, newVal);
+    window.dispatchEvent(new CustomEvent("dlite:flag-change", { detail: { userId: user.id, key, val: newVal } }));
     // Keep global favourites list in sync
     if (key === "favourite") {
       try {

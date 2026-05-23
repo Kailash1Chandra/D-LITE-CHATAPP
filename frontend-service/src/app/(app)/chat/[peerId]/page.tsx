@@ -218,12 +218,14 @@ export default function ChatPage() {
           <div ref={bottomRef} className="h-4" />
         </div>
       )}
-      {isBlockedByPeer ? (
+      {(isBlockedByPeer || chatFlags.blocked) ? (
         <div
-          className="shrink-0 px-5 py-4 flex items-center justify-center gap-2 text-sm border-t"
+          className="shrink-0 px-5 py-4 flex items-center justify-center text-sm border-t"
           style={{ background: "var(--header-bg)", borderColor: "var(--border)", color: "var(--text-muted)" }}
         >
-          <span>You can&apos;t send messages — you&apos;ve been blocked by this user.</span>
+          {chatFlags.blocked
+            ? "You can't send messages — you've blocked this user."
+            : "You can't send messages — you've been blocked by this user."}
         </div>
       ) : (
         <Composer onSend={(text, mediaUrl) => send(text, mediaUrl)} />

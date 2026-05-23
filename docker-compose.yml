@@ -7,7 +7,11 @@ services:
       - "3002:3000"
     environment:
       - NODE_ENV=development
-      - SUPABASE_URL=http://host.docker.internal:54321
+      - NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yY2h1d2J0dHR2YmxpcWF0c2h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2NzY4MDcxMDAsImV4cCI6MTkyMzU4MzEwMH0.xxxxx
+      - NEXT_PUBLIC_CALLS_API_URL=http://localhost:5060
+      - NEXT_PUBLIC_REALTIME_WS_URL=http://localhost:5050
+      - NEXT_PUBLIC_AI_API_URL=http://localhost:5070
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: sh -c "npm install && npm run dev"
@@ -46,6 +50,7 @@ services:
     environment:
       - ENV=development
       - SUPABASE_URL=http://host.docker.internal:54321
+      - ALLOWED_ORIGINS=http://localhost:3002,http://localhost:3000,http://host.docker.internal:3002,http://host.docker.internal:3000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: uvicorn main:socket_app --host 0.0.0.0 --port 5050 --reload
@@ -60,7 +65,10 @@ services:
       - "5060:5060"
     environment:
       - NODE_ENV=development
-      - SUPABASE_URL=http://host.docker.internal:54321
+      - PORT=5060
+      - ZEGO_APP_ID=${ZEGO_APP_ID:-99999999}
+      - ZEGO_SERVER_SECRET=${ZEGO_SERVER_SECRET:-demo_secret_key}
+      - ALLOWED_ORIGINS=http://localhost:3002,http://localhost:3000,http://host.docker.internal:3002,http://host.docker.internal:3000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: sh -c "npm install && npm run dev"
@@ -77,6 +85,10 @@ services:
     environment:
       - ENV=development
       - SUPABASE_URL=http://host.docker.internal:54321
+      - ALLOWED_ORIGINS=http://localhost:3002,http://localhost:3000,http://host.docker.internal:3002,http://host.docker.internal:3000
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-sk-placeholder}
+      - OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY:-placeholder}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: uvicorn main:app --host 0.0.0.0 --port 5070 --reload

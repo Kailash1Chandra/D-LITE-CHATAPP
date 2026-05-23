@@ -19,3 +19,4 @@ ai-backend/.env
 call-service/.env
 frontend-service/.env.local
 supabase/migrations/previous.sql
+presentation.md

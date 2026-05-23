@@ -78,6 +78,7 @@ export default function AIPage() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
+      let buffer = "";
 
       // Switch from thinking → streaming
       setMessages(prev =>
@@ -89,35 +90,50 @@ export default function AIPage() {
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        buffer += chunk;
+
+        // Process complete lines only
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
         for (const line of lines) {
           if (!line.startsWith("data:")) continue;
           try {
             const data = JSON.parse(line.slice(5).trim());
             if (data.error) throw new Error(data.error);
-            if (data.done) break;
+            
+            // Skip status messages
+            if (data.status) continue;
+            
+            if (data.done) {
+              // Exit both loops
+              buffer = "";
+              throw new Error("DONE_STREAMING");
+            }
             if (data.delta) {
               accumulated += data.delta;
               setMessages(prev =>
-                prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated } : m)
+                prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated, isStreaming: true } : m)
               );
             }
-          } catch {
+          } catch (e) {
+            if (e instanceof Error && e.message === "DONE_STREAMING") throw e;
             // skip malformed lines
           }
         }
       }
-
-      // Mark streaming done
-      setMessages(prev =>
-        prev.map(m => m.id === aiMsgId ? { ...m, isStreaming: false } : m)
-      );
-
-      // Save to history
-      historyRef.current.push({ role: "assistant", content: accumulated });
-
     } catch (err) {
+      // Handle DONE_STREAMING as normal completion
+      if (err instanceof Error && err.message === "DONE_STREAMING") {
+        // Normal completion
+        setMessages(prev =>
+          prev.map(m => m.id === aiMsgId ? { ...m, isStreaming: false } : m)
+        );
+        historyRef.current.push({ role: "assistant", content: accumulated });
+        setBusy(false);
+        return;
+      }
+
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setMessages(prev =>
         prev.map(m =>

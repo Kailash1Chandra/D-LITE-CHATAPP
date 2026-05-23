@@ -44,22 +44,22 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     userIdRef.current = user.id
     setCurrentUserId(user.id)
 
-    const [groupRes, msgRes] = await Promise.all([
+    const [groupRes, membersRes, msgRes] = await Promise.all([
+      supabase.from("groups").select("id, name").eq("id", groupId).single(),
       supabase
-        .from("groups")
-        .select(`id, name, members:group_members(role, profile:profiles(id, display_name, username, status))`)
-        .eq("id", groupId)
-        .single(),
+        .from("group_members")
+        .select("role, user_id, profile:profiles(id, display_name, username, status)")
+        .eq("group_id", groupId),
       supabase
         .from("group_messages")
-        .select(`id, content, media_url, created_at, sender_id, sender:profiles(id, display_name, username)`)
+        .select("id, content, media_url, created_at, sender_id, sender:profiles(id, display_name, username)")
         .eq("group_id", groupId)
         .order("created_at", { ascending: true }),
     ])
 
     if (groupRes.data) {
       const g = groupRes.data as any
-      const rawMembers = (g.members || []).map((m: any): User & { role: "owner" | "admin" | "mod" | "member" } => {
+      const rawMembers = ((membersRes.data || []) as any[]).map((m): User & { role: "owner" | "admin" | "mod" | "member" } => {
         const p = m.profile
         const name: string = p.display_name || p.username || "?"
         const dbRole: string = m.role || "Member"
@@ -86,7 +86,7 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
 
     if (msgRes.data) {
       setMessages(
-        msgRes.data.map((m: any) => {
+        (msgRes.data as any[]).map((m) => {
           const sender = m.sender as any
           const name: string = sender?.display_name || sender?.username || "Unknown"
           return {

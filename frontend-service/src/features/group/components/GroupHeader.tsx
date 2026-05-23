@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Phone, Video, MoreVertical, Hash, Lock, BellOff, Bell } from "lucide-react";
+import { Phone, Video, MoreVertical, Hash, Lock, BellOff, Bell, LogOut } from "lucide-react";
 import { IconButton } from "@/shared/components/IconButton";
 import { StackedAvatar } from "./StackedAvatar";
 import { Pill } from "@/shared/components/Pill";
@@ -12,9 +12,10 @@ import { GroupPreview } from "@/features/dashboard/lib/mock-data";
 export interface GroupHeaderProps {
   group: GroupPreview;
   isPrivate?: boolean;
+  onLeave?: () => void;
 }
 
-export function GroupHeader({ group, isPrivate = false }: GroupHeaderProps) {
+export function GroupHeader({ group, isPrivate = false, onLeave }: GroupHeaderProps) {
   const router = useRouter();
   const onlineCount = group.members.filter(m => m.isOnline).length;
   const [isMuted, setIsMuted] = useState(false);
@@ -111,6 +112,16 @@ export function GroupHeader({ group, isPrivate = false }: GroupHeaderProps) {
                     : <BellOff size={15} style={{ color: "var(--text-muted)" }} />}
                   {isMuted ? "Unmute Notifications" : "Mute Notifications"}
                 </button>
+                {onLeave && (
+                  <button
+                    onClick={() => { setShowMenu(false); onLeave(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[rgba(239,68,68,0.08)]"
+                    style={{ color: "var(--danger)" }}
+                  >
+                    <LogOut size={15} style={{ color: "var(--danger)" }} />
+                    Leave Group
+                  </button>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

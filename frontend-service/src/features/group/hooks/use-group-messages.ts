@@ -13,6 +13,7 @@ export interface GroupMessage {
   mediaUrl?: string
   time: string
   dateStr?: string
+  reactions?: { emoji: string; count: number; reacted: boolean }[]
 }
 
 interface UseGroupMessagesReturn {
@@ -20,12 +21,24 @@ interface UseGroupMessagesReturn {
   members: (User & { role: "owner" | "admin" | "mod" | "member" })[]
   messages: GroupMessage[]
   send: (content: string, mediaUrl?: string) => void
+  addReaction: (messageId: string, emoji: string) => void
   deleteMessage: (id: string) => void
   editMessage: (id: string, newContent: string) => void
+  leaveGroup: () => Promise<void>
   loading: boolean
   currentUserId: string | null
   currentUserRole: "owner" | "admin" | "mod" | "member" | null
   reload: () => void
+}
+
+function groupReactions(raw: any[], userId: string) {
+  const map: Record<string, { count: number; reacted: boolean }> = {}
+  for (const r of raw) {
+    if (!map[r.emoji]) map[r.emoji] = { count: 0, reacted: false }
+    map[r.emoji].count++
+    if (r.user_id === userId) map[r.emoji].reacted = true
+  }
+  return Object.entries(map).map(([emoji, { count, reacted }]) => ({ emoji, count, reacted }))
 }
 
 export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
@@ -52,7 +65,7 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
         .eq("group_id", groupId),
       supabase
         .from("group_messages")
-        .select("id, content, media_url, created_at, sender_id, sender:profiles(id, display_name, username)")
+        .select("id, content, media_url, created_at, sender_id, sender:profiles(id, display_name, username), reactions:group_message_reactions(emoji, user_id)")
         .eq("group_id", groupId)
         .order("created_at", { ascending: true }),
     ])
@@ -85,10 +98,14 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     }
 
     if (msgRes.data) {
+      let lastDate = ""
       setMessages(
         (msgRes.data as any[]).map((m) => {
           const sender = m.sender as any
           const name: string = sender?.display_name || sender?.username || "Unknown"
+          const dateStr = new Date(m.created_at).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+          const showDate = dateStr !== lastDate
+          lastDate = dateStr
           return {
             id: m.id,
             direction: m.sender_id === user.id ? "out" : "in",
@@ -97,6 +114,8 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
             content: m.content || "",
             mediaUrl: m.media_url ?? undefined,
             time: new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            dateStr: showDate ? dateStr : undefined,
+            reactions: groupReactions(m.reactions || [], user.id),
           } as GroupMessage
         })
       )
@@ -111,6 +130,7 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     const channel = supabase
       .channel(`group-${groupId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "group_messages", filter: `group_id=eq.${groupId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_message_reactions" }, load)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [groupId, load])
@@ -127,10 +147,39 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     })
   }, [groupId])
 
+  const addReaction = React.useCallback(async (messageId: string, emoji: string) => {
+    const userId = userIdRef.current
+    if (!userId) return
+    const supabase = createClient()
+
+    const msg = messages.find(m => m.id === messageId)
+    const alreadyReacted = !!msg?.reactions?.find(r => r.emoji === emoji && r.reacted)
+
+    // Optimistic update
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m
+      const existing = m.reactions ?? []
+      if (alreadyReacted) {
+        return { ...m, reactions: existing.map(r => r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r).filter(r => r.count > 0) }
+      }
+      const found = existing.find(r => r.emoji === emoji)
+      if (found) return { ...m, reactions: existing.map(r => r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r) }
+      return { ...m, reactions: [...existing, { emoji, count: 1, reacted: true }] }
+    }))
+
+    if (alreadyReacted) {
+      await supabase.from("group_message_reactions").delete()
+        .eq("message_id", messageId).eq("user_id", userId).eq("emoji", emoji)
+    } else {
+      await supabase.from("group_message_reactions")
+        .upsert({ message_id: messageId, user_id: userId, emoji }, { ignoreDuplicates: true })
+    }
+  }, [messages])
+
   const deleteMessage = React.useCallback(async (id: string) => {
     const userId = userIdRef.current
     if (!userId) return
-    setMessages((prev) => prev.filter((m) => m.id !== id))
+    setMessages(prev => prev.filter(m => m.id !== id))
     const supabase = createClient()
     await supabase.from("group_messages").delete().eq("id", id).eq("sender_id", userId)
   }, [])
@@ -138,10 +187,17 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
   const editMessage = React.useCallback(async (id: string, newContent: string) => {
     const userId = userIdRef.current
     if (!userId) return
-    setMessages((prev) => prev.map((m) => m.id === id ? { ...m, content: newContent } : m))
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, content: newContent } : m))
     const supabase = createClient()
     await supabase.from("group_messages").update({ content: newContent }).eq("id", id).eq("sender_id", userId)
   }, [])
 
-  return { group, members, messages, send, deleteMessage, editMessage, loading, currentUserId, currentUserRole, reload: load }
+  const leaveGroup = React.useCallback(async () => {
+    const userId = userIdRef.current
+    if (!userId) return
+    const supabase = createClient()
+    await supabase.from("group_members").delete().eq("group_id", groupId).eq("user_id", userId)
+  }, [groupId])
+
+  return { group, members, messages, send, addReaction, deleteMessage, editMessage, leaveGroup, loading, currentUserId, currentUserRole, reload: load }
 }

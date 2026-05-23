@@ -112,10 +112,26 @@ export default function AIPage() {
               throw new Error("DONE_STREAMING");
             }
             if (data.delta) {
-              accumulated += data.delta;
-              setMessages(prev =>
-                prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated, isStreaming: true } : m)
-              );
+              const chunk: string = data.delta;
+              // If chunk is a single token (≤3 chars) show instantly.
+              // If the model sent a large chunk, animate it word-by-word
+              // so the response always feels like it's being typed.
+              if (chunk.length <= 3) {
+                accumulated += chunk;
+                setMessages(prev =>
+                  prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated, isStreaming: true } : m)
+                );
+              } else {
+                const words = chunk.split(/(\s+)/); // keep whitespace tokens
+                const delay = Math.min(40, Math.round(1200 / words.length));
+                for (const word of words) {
+                  accumulated += word;
+                  setMessages(prev =>
+                    prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated, isStreaming: true } : m)
+                  );
+                  if (delay > 4) await new Promise(r => setTimeout(r, delay));
+                }
+              }
             }
           } catch (e) {
             if (e instanceof Error && e.message === "DONE_STREAMING") throw e;

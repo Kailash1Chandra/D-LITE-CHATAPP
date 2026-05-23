@@ -23,6 +23,9 @@ interface UseGroupMessagesReturn {
   deleteMessage: (id: string) => void
   editMessage: (id: string, newContent: string) => void
   loading: boolean
+  currentUserId: string | null
+  currentUserRole: "owner" | "admin" | "mod" | "member" | null
+  reload: () => void
 }
 
 export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
@@ -30,6 +33,8 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
   const [members, setMembers] = React.useState<(User & { role: "owner" | "admin" | "mod" | "member" })[]>([])
   const [messages, setMessages] = React.useState<GroupMessage[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [currentUserId, setCurrentUserId] = React.useState<string | null>(null)
+  const [currentUserRole, setCurrentUserRole] = React.useState<"owner" | "admin" | "mod" | "member" | null>(null)
   const userIdRef = React.useRef<string | null>(null)
 
   const load = React.useCallback(async () => {
@@ -37,6 +42,7 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setLoading(false); return }
     userIdRef.current = user.id
+    setCurrentUserId(user.id)
 
     const [groupRes, msgRes] = await Promise.all([
       supabase
@@ -58,6 +64,7 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
         const name: string = p.display_name || p.username || "?"
         const dbRole: string = m.role || "Member"
         const role = dbRole === "Owner" ? "owner" : dbRole === "Admin" ? "admin" : dbRole === "Moderator" ? "mod" : "member"
+        if (p.id === user.id) setCurrentUserRole(role)
         return {
           id: p.id,
           name,
@@ -136,5 +143,5 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     await supabase.from("group_messages").update({ content: newContent }).eq("id", id).eq("sender_id", userId)
   }, [])
 
-  return { group, members, messages, send, deleteMessage, editMessage, loading }
+  return { group, members, messages, send, deleteMessage, editMessage, loading, currentUserId, currentUserRole, reload: load }
 }

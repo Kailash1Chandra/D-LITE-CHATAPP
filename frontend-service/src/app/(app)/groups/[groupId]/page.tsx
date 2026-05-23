@@ -10,7 +10,7 @@ import { useGroupMessages } from "@/features/group/hooks/use-group-messages";
 
 export default function GroupChatPage() {
   const { groupId } = useParams<{ groupId: string }>();
-  const { group, members, messages, send, deleteMessage, editMessage, loading } = useGroupMessages(groupId);
+  const { group, members, messages, send, deleteMessage, editMessage, loading, currentUserId, currentUserRole, reload } = useGroupMessages(groupId);
 
   if (loading || !group) {
     return (
@@ -59,7 +59,13 @@ export default function GroupChatPage() {
           </div>
           <Composer onSend={send} placeholder={`Message ${group.name}…`} />
         </div>
-        <MembersPanel members={members} />
+        <MembersPanel
+          members={members}
+          groupId={groupId}
+          currentUserId={currentUserId ?? undefined}
+          currentUserRole={currentUserRole ?? undefined}
+          onMembersChange={reload}
+        />
       </div>
     </div>
   );

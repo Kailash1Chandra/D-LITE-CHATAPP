@@ -10,6 +10,7 @@ export interface GroupListItem {
   lastMessage: string
   time: string
   unreadCount: number
+  isMuted: boolean
 }
 
 export function useGroupList() {
@@ -29,7 +30,7 @@ export function useGroupList() {
         .select("group_id, groups(id, name)")
         .eq("user_id", user.id)
 
-      if (!memberships?.length) { setLoading(false); return }
+      if (!memberships?.length) { setGroups([]); setLoading(false); return }
 
       const groupIds = memberships.map((m: any) => m.group_id).filter(Boolean)
 
@@ -55,6 +56,8 @@ export function useGroupList() {
         const name: string = g.name || "Unnamed Group"
         const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
         const last = lastMsgMap.get(g.id)
+        let isMuted = false
+        try { isMuted = localStorage.getItem(`dlite_group_${g.id}_muted`) === "1" } catch {}
         return [{
           id: g.id,
           name,
@@ -62,6 +65,7 @@ export function useGroupList() {
           lastMessage: last?.content || "No messages yet",
           time: last ? new Date(last.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
           unreadCount: 0,
+          isMuted,
         }]
       })
 
@@ -74,6 +78,8 @@ export function useGroupList() {
     const channel = supabase
       .channel("group_list_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "group_messages" }, load)
+      // Reload when user joins/leaves a group (catches new group creation too)
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, load)
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }

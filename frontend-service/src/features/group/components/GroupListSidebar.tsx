@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, BellOff } from "lucide-react";
 import { Badge } from "@/shared/components/Badge";
 import { useGroupList } from "../hooks/use-group-list";
 import { CreateGroupModal } from "./CreateGroupModal";
@@ -80,7 +80,9 @@ export function GroupListSidebar() {
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm themed-text-3 truncate flex-1">{group.lastMessage}</p>
-                      {group.unreadCount > 0 && <Badge count={group.unreadCount} />}
+                      {group.isMuted
+                        ? <BellOff size={12} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                        : group.unreadCount > 0 && <Badge count={group.unreadCount} />}
                     </div>
                   </div>
                 </Link>

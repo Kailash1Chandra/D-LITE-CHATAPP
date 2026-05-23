@@ -90,7 +90,6 @@ export function useDMConversations() {
   useEffect(() => {
     const supabase = createClient()
     const suffix = Math.random().toString(36).slice(2)
-    let activityChannel: ReturnType<typeof supabase.channel> | null = null
 
     // DB changes — picks up INSERT (new messages). UPDATE needs REPLICA IDENTITY FULL.
     const dbChannel = supabase
@@ -98,25 +97,20 @@ export function useDMConversations() {
       .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, load)
       .subscribe()
 
-    // Separate setup for the activity broadcast (needs async userId)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      activityChannel = supabase
-        .channel(`dlite-user-${user.id}-activity`)
-        .on("broadcast", { event: "chat-read" }, ({ payload }) => {
-          // Instantly zero unread for the peer we just read — no DB round-trip needed
-          setConversations(prev =>
-            prev.map(c => c.id === payload.peerId ? { ...c, unreadCount: 0 } : c)
-          )
-        })
-        .subscribe()
-    })
+    // Instantly zero unread badge when user opens a chat (same tab, no DB round-trip)
+    function onChatRead(e: Event) {
+      const { peerId } = (e as CustomEvent<{ peerId: string }>).detail
+      setConversations(prev =>
+        prev.map(c => c.id === peerId ? { ...c, unreadCount: 0 } : c)
+      )
+    }
+    window.addEventListener("dlite:chat-read", onChatRead)
 
     load()
 
     return () => {
       supabase.removeChannel(dbChannel)
-      if (activityChannel) supabase.removeChannel(activityChannel)
+      window.removeEventListener("dlite:chat-read", onChatRead)
     }
   }, [load])
 

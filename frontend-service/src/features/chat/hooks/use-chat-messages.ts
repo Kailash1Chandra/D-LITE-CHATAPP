@@ -91,12 +91,8 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
         .send({ type: "broadcast", event: "read", payload: { readBy: user.id } })
         .catch(() => {})
 
-      // Tell OUR OWN sidebar to instantly clear the unread badge —
-      // without this the badge stays until REPLICA IDENTITY FULL fires an UPDATE event
-      supabase
-        .channel(`dlite-user-${user.id}-activity`)
-        .send({ type: "broadcast", event: "chat-read", payload: { peerId } })
-        .catch(() => {})
+      // Instantly clear the unread badge in the sidebar (same tab)
+      window.dispatchEvent(new CustomEvent("dlite:chat-read", { detail: { peerId } }))
     }
   }, [peerId])
 

@@ -63,6 +63,8 @@ export default function AIPage() {
     // Keep history for context
     historyRef.current.push({ role: "user", content: text });
 
+    let accumulated = "";
+
     try {
       const res = await fetch(`${AI_URL}/chat/stream`, {
         method: "POST",
@@ -77,7 +79,6 @@ export default function AIPage() {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let accumulated = "";
       let buffer = "";
 
       // Switch from thinking → streaming

@@ -24,6 +24,7 @@ interface UseChatMessagesReturn {
   deleteMessage: (id: string) => void
   editMessage: (id: string, newContent: string) => void
   loading: boolean
+  isBlockedByPeer: boolean
 }
 
 function toMessage(raw: any, currentUserId: string): Message {
@@ -51,6 +52,7 @@ function toMessage(raw: any, currentUserId: string): Message {
 export function useChatMessages(peerId: string): UseChatMessagesReturn {
   const [messages, setMessages] = React.useState<Message[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [isBlockedByPeer, setIsBlockedByPeer] = React.useState(false)
   const userIdRef = React.useRef<string | null>(null)
 
   const loadMessages = React.useCallback(async () => {
@@ -59,23 +61,31 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     if (!user) { setLoading(false); return }
     userIdRef.current = user.id
 
-    const { data: rawMessages } = await supabase
-      .from("direct_messages")
-      .select(`
-        id, content, media_url, status, created_at, sender_id, receiver_id, reply_to_id,
-        reactions:message_reactions(emoji, user_id)
-      `)
-      // Use in() filter — works on all PostgREST versions, avoids and() inside or()
-      .in("sender_id", [user.id, peerId])
-      .in("receiver_id", [user.id, peerId])
-      .order("created_at", { ascending: true })
+    const [{ data: rawMessages }, { data: blockCheck }] = await Promise.all([
+      supabase
+        .from("direct_messages")
+        .select(`
+          id, content, media_url, status, created_at, sender_id, receiver_id, reply_to_id,
+          reactions:message_reactions(emoji, user_id)
+        `)
+        .in("sender_id", [user.id, peerId])
+        .in("receiver_id", [user.id, peerId])
+        .order("created_at", { ascending: true }),
 
-    if (rawMessages) {
-      setMessages(rawMessages.map((m) => toMessage(m, user.id)))
-    }
+      // Check if this peer has blocked us (blocked_select now allows both parties to see)
+      supabase
+        .from("blocked_users")
+        .select("blocker_id")
+        .eq("blocker_id", peerId)
+        .eq("blocked_id", user.id)
+        .maybeSingle(),
+    ])
+
+    if (rawMessages) setMessages(rawMessages.map((m) => toMessage(m, user.id)))
+    setIsBlockedByPeer(!!blockCheck)
     setLoading(false)
 
-    // Mark received messages as read
+    // Mark all incoming unread messages as "read"
     const { data: updated } = await supabase
       .from("direct_messages")
       .update({ status: "read" })
@@ -85,13 +95,7 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
       .select("id")
 
     if (updated && updated.length > 0) {
-      // Tell sender their messages were read (double tick)
-      supabase
-        .channel(`read-receipt-${[user.id, peerId].sort().join("-")}`)
-        .send({ type: "broadcast", event: "read", payload: { readBy: user.id } })
-        .catch(() => {})
-
-      // Instantly clear the unread badge in the sidebar (same tab)
+      // Clear sidebar unread badge immediately (same tab)
       window.dispatchEvent(new CustomEvent("dlite:chat-read", { detail: { peerId } }))
     }
   }, [peerId])
@@ -102,36 +106,31 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     const supabase = createClient()
     const suffix = Math.random().toString(36).slice(2)
 
-    // Postgres changes — new messages + reactions
     const msgChannel = supabase
       .channel(`dm-thread-${peerId}-${suffix}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, loadMessages)
-      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, loadMessages)
-      .subscribe()
-
-    // Broadcast channel for read receipts — lets sender see double tick
-    // instantly without REPLICA IDENTITY FULL on direct_messages
-    const userId = userIdRef.current
-    const receiptChannelName = userId
-      ? `read-receipt-${[userId, peerId].sort().join("-")}`
-      : `read-receipt-${peerId}-${suffix}`
-    const receiptChannel = supabase
-      .channel(receiptChannelName)
-      .on("broadcast", { event: "read" }, ({ payload }) => {
-        // Peer read our messages → flip all our sent messages to "read"
-        if (payload.readBy === peerId) {
+      // New message → full reload
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages" }, loadMessages)
+      // Status update (e.g. receiver marks "read") → flip tick without full reload
+      // Requires REPLICA IDENTITY FULL on direct_messages (migration 20240107)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "direct_messages" }, (payload) => {
+        const userId = userIdRef.current
+        if (!userId) return
+        const row = payload.new as any
+        // If it's one of our sent messages that just became "read", update it locally
+        if (row.sender_id === userId && row.status === "read") {
           setMessages(prev =>
-            prev.map(m =>
-              m.isOwn && m.status !== "read" ? { ...m, status: "read" } : m
-            )
+            prev.map(m => m.id === row.id ? { ...m, status: "read" } : m)
           )
         }
       })
+      // Deleted message → full reload
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "direct_messages" }, loadMessages)
+      // Reactions
+      .on("postgres_changes", { event: "*", schema: "public", table: "message_reactions" }, loadMessages)
       .subscribe()
 
     return () => {
       supabase.removeChannel(msgChannel)
-      supabase.removeChannel(receiptChannel)
     }
   }, [peerId, loadMessages])
 
@@ -141,7 +140,7 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     const supabase = createClient()
 
     const optimisticId = `opt-${Date.now()}`
-    const now = new Date().toISOString();
+    const now = new Date().toISOString()
     const optimistic: Message = {
       id: optimisticId,
       content,
@@ -174,31 +173,21 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     const msg = messages.find((m) => m.id === messageId)
     const alreadyReacted = !!msg?.reactions?.find((r) => r.emoji === emoji && r.reacted)
 
-    // Optimistic update — instant UI, DB confirms via realtime
     setMessages((prev) => prev.map((m) => {
       if (m.id !== messageId) return m
       const existing = m.reactions ?? []
       if (alreadyReacted) {
-        const updated = existing
-          .map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r)
-          .filter((r) => r.count > 0)
-        return { ...m, reactions: updated }
-      } else {
-        const found = existing.find((r) => r.emoji === emoji)
-        if (found) {
-          return { ...m, reactions: existing.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r) }
-        }
-        return { ...m, reactions: [...existing, { emoji, count: 1, reacted: true }] }
+        return { ...m, reactions: existing.map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r).filter((r) => r.count > 0) }
       }
+      const found = existing.find((r) => r.emoji === emoji)
+      if (found) return { ...m, reactions: existing.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r) }
+      return { ...m, reactions: [...existing, { emoji, count: 1, reacted: true }] }
     }))
 
     if (alreadyReacted) {
       await supabase.from("message_reactions").delete()
         .eq("message_id", messageId).eq("user_id", userId).eq("emoji", emoji)
     } else {
-      // ignoreDuplicates: true → INSERT ... ON CONFLICT DO NOTHING
-      // avoids needing an UPDATE RLS policy (upsert without this flag
-      // generates ON CONFLICT DO UPDATE which fails with 403)
       await supabase.from("message_reactions")
         .upsert({ message_id: messageId, user_id: userId, emoji }, { ignoreDuplicates: true })
     }
@@ -220,5 +209,5 @@ export function useChatMessages(peerId: string): UseChatMessagesReturn {
     await supabase.from("direct_messages").update({ content: newContent }).eq("id", id).eq("sender_id", userId)
   }, [])
 
-  return { messages, send, addReaction, deleteMessage, editMessage, loading }
+  return { messages, send, addReaction, deleteMessage, editMessage, loading, isBlockedByPeer }
 }

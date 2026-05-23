@@ -2,7 +2,6 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import React from "react";
 import { ChatHeader } from "@/features/chat/components/ChatHeader";
 import { ChatStatusBanner, type ChatFlag } from "@/features/chat/components/ChatStatusBanner";
 import { MessageBubble } from "@/features/chat/components/MessageBubble";
@@ -77,12 +76,11 @@ type ThreadItem =
 
 export default function ChatPage() {
   const { peerId } = useParams<{ peerId: string }>();
-  const { messages, send, addReaction, deleteMessage, editMessage, loading } = useChatMessages(peerId);
+  const { messages, send, addReaction, deleteMessage, editMessage, loading, isBlockedByPeer } = useChatMessages(peerId);
   const { isOnline } = usePresence();
 
   const [peer, setPeer] = useState<PeerUser>({ id: peerId, name: "Loading…", initials: "…", isOnline: false });
   const [calls, setCalls] = useState<CallRecord[]>([]);
-  const [myId, setMyId] = useState<string | null>(null);
   const [chatFlags, setChatFlags] = useState<Partial<Record<ChatFlag, boolean>>>({});
 
   // Load peer profile
@@ -108,7 +106,6 @@ export default function ChatPage() {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      setMyId(user.id);
       supabase
         .from("calls")
         .select("id, type, status, started_at, ended_at, caller_id, receiver_id")
@@ -194,7 +191,10 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full themed-canvas relative z-0">
       <ChatHeader user={peerUser} isTyping={false} subText={subText} />
-      <ChatStatusBanner flags={chatFlags} onAction={handleFlagAction} />
+      <ChatStatusBanner
+        flags={{ ...chatFlags, blockedByPeer: isBlockedByPeer }}
+        onAction={handleFlagAction}
+      />
       {loading ? (
         <div className="flex-1 flex items-center justify-center themed-text-3 text-sm">
           Loading messages…
@@ -218,7 +218,16 @@ export default function ChatPage() {
           <div ref={bottomRef} className="h-4" />
         </div>
       )}
-      <Composer onSend={(text, mediaUrl) => send(text, mediaUrl)} />
+      {isBlockedByPeer ? (
+        <div
+          className="shrink-0 px-5 py-4 flex items-center justify-center gap-2 text-sm border-t"
+          style={{ background: "var(--header-bg)", borderColor: "var(--border)", color: "var(--text-muted)" }}
+        >
+          <span>You can&apos;t send messages — you&apos;ve been blocked by this user.</span>
+        </div>
+      ) : (
+        <Composer onSend={(text, mediaUrl) => send(text, mediaUrl)} />
+      )}
     </div>
   );
 }

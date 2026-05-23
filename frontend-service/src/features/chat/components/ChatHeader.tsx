@@ -66,6 +66,26 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
     setMap[key](newVal);
     setFlag(user.id, key, newVal);
     window.dispatchEvent(new CustomEvent("dlite:flag-change", { detail: { userId: user.id, key, val: newVal } }));
+
+    // Sync block/unblock to the DB so the other party can detect it
+    if (key === "blocked") {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data: { user: me } }) => {
+        if (!me) return;
+        if (newVal) {
+          supabase.from("blocked_users")
+            .insert({ blocker_id: me.id, blocked_id: user.id })
+            .then(() => {});
+        } else {
+          supabase.from("blocked_users")
+            .delete()
+            .eq("blocker_id", me.id)
+            .eq("blocked_id", user.id)
+            .then(() => {});
+        }
+      });
+    }
+
     // Keep global favourites list in sync
     if (key === "favourite") {
       try {

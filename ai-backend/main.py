@@ -38,14 +38,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="D-Lite AI Backend", lifespan=lifespan)
 
-if ALLOWED_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=ALLOWED_ORIGINS,
-        allow_credentials=False,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type", "Authorization"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS or ["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
 
 SYSTEM_PROMPT = (
     "You're D-Lite, a casual, warm, friendly chat buddy. "
@@ -125,20 +124,17 @@ async def chat_stream(req: ChatRequest):
     history.append({"role": "user", "content": req.message})
 
     async def generate():
+        key = os.getenv("OPENROUTER_API_KEY")
+        if not key:
+            yield f"data: {json.dumps({'error': 'OPENROUTER_API_KEY not configured'})}\n\n"
+            return
+
+        model = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
         try:
-            key = os.getenv("OPENROUTER_API_KEY")
-            if not key:
-                yield f"data: {json.dumps({'error': 'OPENROUTER_API_KEY not configured'})}\n\n"
-                return
-
-            # Signal that streaming has started (helps with connection confirmation)
-            yield f"data: {json.dumps({'status': 'streaming_started'})}\n\n"
-
-            model = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
-            
-            # Use new_limits to disable HTTP/2 multiplexing for better streaming
-            limits = httpx.Limits(max_connections=1, max_keepalive_connections=1)
-            async with httpx.AsyncClient(timeout=None, limits=limits, http2=False) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(None, connect=15.0),
+                http2=False,
+            ) as client:
                 async with client.stream(
                     "POST",
                     "https://openrouter.ai/api/v1/chat/completions",
@@ -148,40 +144,30 @@ async def chat_stream(req: ChatRequest):
                         "max_tokens": 1024,
                         "stream": True,
                     },
-                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                    headers={
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json",
+                        "Accept": "text/event-stream",
+                    },
                 ) as resp:
                     resp.raise_for_status()
-
-                    buffer = ""
-                    async for chunk in resp.aiter_bytes(chunk_size=16):
-                        if not chunk:
+                    # aiter_lines() yields each SSE line as it arrives — no manual buffering needed
+                    async for line in resp.aiter_lines():
+                        line = line.strip()
+                        if not line or not line.startswith("data:"):
                             continue
-
-                        buffer += chunk.decode("utf-8", errors="ignore")
-
-                        # Process complete lines immediately
-                        while "\n" in buffer:
-                            line, buffer = buffer.split("\n", 1)
-                            line = line.strip()
-                            if not line or not line.startswith("data:"):
-                                continue
-
-                            payload = line[5:].strip()
-                            if not payload or payload == "[DONE]":
-                                continue
-
-                            try:
-                                data = json.loads(payload)
-                            except Exception:
-                                continue
-
-                            choice = (data.get("choices") or [{}])[0]
-                            delta = choice.get("delta") or {}
-                            content = delta.get("content")
-
-                            # Send each token immediately as it arrives
-                            if content:
-                                yield f"data: {json.dumps({'delta': content})}\n\n"
+                        payload = line[5:].strip()
+                        if payload == "[DONE]":
+                            break
+                        if not payload:
+                            continue
+                        try:
+                            data = json.loads(payload)
+                        except Exception:
+                            continue
+                        content = ((data.get("choices") or [{}])[0].get("delta") or {}).get("content")
+                        if content:
+                            yield f"data: {json.dumps({'delta': content})}\n\n"
 
             yield f"data: {json.dumps({'done': True})}\n\n"
         except Exception as e:
@@ -191,10 +177,9 @@ async def chat_stream(req: ChatRequest):
         generate(),
         media_type="text/event-stream",
         headers={
-            "Cache-Control": "no-cache",
+            "Cache-Control": "no-cache, no-transform",
             "X-Accel-Buffering": "no",
             "Connection": "keep-alive",
-            "Transfer-Encoding": "chunked",
         },
     )
 

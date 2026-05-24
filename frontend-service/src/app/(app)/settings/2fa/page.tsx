@@ -43,6 +43,13 @@ export default function TwoFactorAuthPage() {
     setError(null);
     const supabase = createClient();
 
+    // Unenroll any existing unverified factor before re-enrolling
+    const { data: existingFactors } = await supabase.auth.mfa.listFactors();
+    const unverified = existingFactors?.totp?.find(f => (f.status as string) === "unverified");
+    if (unverified) {
+      await supabase.auth.mfa.unenroll({ factorId: unverified.id });
+    }
+
     const { data, error: enrollError } = await supabase.auth.mfa.enroll({
       factorType: "totp",
       friendlyName: "D-Lite Authenticator",

@@ -43,7 +43,8 @@ export async function proxy(request: NextRequest) {
 
   const isMfaRoute =
     pathname.startsWith('/setup-authenticator') ||
-    pathname.startsWith('/verify-authenticator')
+    pathname.startsWith('/verify-authenticator') ||
+    pathname.startsWith('/auth/callback')
 
   const isProtectedRoute =
     pathname.startsWith('/dashboard') ||
@@ -55,7 +56,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/notifications') ||
     pathname.startsWith('/settings')
 
-  // Not logged in — block protected and MFA pages
+  // Not logged in — allow auth pages, block everything else
   if (!user) {
     if (isProtectedRoute || isMfaRoute) {
       const url = request.nextUrl.clone()
@@ -66,25 +67,40 @@ export async function proxy(request: NextRequest) {
   }
 
   // Logged in — check MFA assurance level
-  let needsMfa = false
+  let currentLevel: string | undefined
+  let nextLevel: string | undefined
   try {
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-    needsMfa = aal?.currentLevel === 'aal1' && aal?.nextLevel === 'aal2'
+    currentLevel = aal?.currentLevel
+    nextLevel = aal?.nextLevel
   } catch {
     // MFA check failed — don't block the user
   }
 
-  // Has enrolled MFA but not yet verified this session → must verify first
-  if (needsMfa && isProtectedRoute) {
+  // Fully verified (aal2) — redirect away from auth/MFA pages
+  if (currentLevel === 'aal2') {
+    if (isAuthRoute || isMfaRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
+  // In the middle of MFA flow — allow
+  if (isMfaRoute) return supabaseResponse
+
+  // No MFA factor enrolled yet → force setup
+  if (nextLevel === 'aal1') {
     const url = request.nextUrl.clone()
-    url.pathname = '/verify-authenticator'
+    url.pathname = '/setup-authenticator'
     return NextResponse.redirect(url)
   }
 
-  // Fully authenticated — redirect away from auth and MFA setup pages
-  if (!needsMfa && (isAuthRoute || isMfaRoute)) {
+  // MFA enrolled but not verified this session → force challenge
+  if (nextLevel === 'aal2' && currentLevel !== 'aal2') {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/verify-authenticator'
     return NextResponse.redirect(url)
   }
 

@@ -124,7 +124,7 @@ export function ProfileForm({ initialName, initialUsername, initialEmail, initia
 
             {/* Hover overlay */}
             <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ background: "rgba(0,0,0,0.45)" }}>
+              style={{ background: "rgba(0,0,0,0.65)" }}>
               {uploading
                 ? <Loader2 size={24} className="text-white animate-spin" />
                 : <Camera size={24} className="text-white" />}

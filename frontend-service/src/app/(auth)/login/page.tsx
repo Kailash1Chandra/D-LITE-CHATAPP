@@ -124,7 +124,7 @@ function LoginForm() {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-5 rounded-2xl px-4 py-3 text-sm flex items-start gap-2"
-              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", color: "var(--danger)" }}
+              style={{ background: "rgba(239,68,68,0.22)", border: "1px solid rgba(239,68,68,0.25)", color: "var(--danger)" }}
             >
               <span className="mt-0.5">⚠</span> {error}
             </motion.div>

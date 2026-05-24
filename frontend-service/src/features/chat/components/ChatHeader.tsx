@@ -258,7 +258,7 @@ export function ChatHeader({ user, isTyping, subText }: ChatHeaderProps) {
                   style={{
                     background: "var(--surface-elevated)",
                     border: "1px solid var(--border)",
-                    boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+                    boxShadow: "0 8px 40px rgba(0,0,0,0.75)",
                     minWidth: 210,
                   }}
                 >

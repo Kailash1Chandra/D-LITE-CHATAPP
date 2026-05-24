@@ -131,7 +131,7 @@ export function CreateGroupModal({ open, onClose }: CreateGroupModalProps) {
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           className="absolute inset-0"
-          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
           onClick={handleClose}
         />
         <motion.div
@@ -151,7 +151,7 @@ export function CreateGroupModal({ open, onClose }: CreateGroupModalProps) {
           </div>
 
           {error && (
-            <div className="mb-4 px-3 py-2 rounded-xl text-sm" style={{ background: "rgba(239,68,68,0.08)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.2)" }}>
+            <div className="mb-4 px-3 py-2 rounded-xl text-sm" style={{ background: "rgba(239,68,68,0.22)", color: "var(--danger)", border: "1px solid rgba(239,68,68,0.2)" }}>
               {error}
             </div>
           )}

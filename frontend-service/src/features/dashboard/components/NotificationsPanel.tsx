@@ -56,7 +56,7 @@ export function NotificationsPanel() {
               {/* Icon */}
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
-                style={{ background: "rgba(139,92,246,0.15)" }}
+                style={{ background: "rgba(139,92,246,0.3)" }}
               >
                 <Users size={15} style={{ color: "#8b5cf6" }} />
               </div>

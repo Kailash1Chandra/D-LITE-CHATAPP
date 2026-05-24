@@ -23,7 +23,7 @@ export function IncomingCallOverlay({ call, onAccept, onDecline }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[80]"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+            style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(4px)" }}
           />
 
           {/* Card */}

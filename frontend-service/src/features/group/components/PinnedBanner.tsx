@@ -20,7 +20,7 @@ export function PinnedBanner({ text }: PinnedBannerProps) {
           exit={{ opacity: 0, height: 0 }}
           className="themed-surface flex items-center justify-between px-6 py-2 overflow-hidden"
           style={{
-            background: 'linear-gradient(90deg, rgba(250,204,21,0.1), rgba(249,115,22,0.05))',
+            background: 'linear-gradient(90deg, rgba(250,204,21,0.1), rgba(249,115,22,0.18))',
             borderBottom: '1px solid var(--border)',
           }}
         >

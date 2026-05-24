@@ -55,7 +55,7 @@ export function AvatarUpload({ avatarUrl, initials, onUpload }: AvatarUploadProp
 
           <div
             className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: "rgba(0,0,0,0.45)" }}
+            style={{ background: "rgba(0,0,0,0.65)" }}
           >
             <Camera size={22} className="text-white" />
           </div>

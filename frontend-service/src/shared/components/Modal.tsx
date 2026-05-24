@@ -24,7 +24,7 @@ export function Modal({ open, onOpenChange, title, description, children }: Moda
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50 backdrop-blur-sm"
-                style={{ background: "rgba(0,0,0,0.5)" }}
+                style={{ background: "rgba(0,0,0,0.75)" }}
               />
             </Dialog.Overlay>
             <Dialog.Content asChild>

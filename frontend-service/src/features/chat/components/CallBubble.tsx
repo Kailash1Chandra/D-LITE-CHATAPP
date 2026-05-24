@@ -24,7 +24,7 @@ export function CallBubble({ type, status, duration, time, isOwn }: CallBubblePr
       <div
         className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm max-w-[240px]"
         style={{
-          background: missed ? "rgba(239,68,68,0.08)" : "var(--surface-2, var(--surface))",
+          background: missed ? "rgba(239,68,68,0.22)" : "var(--surface-2, var(--surface))",
           border: `1px solid ${missed ? "rgba(239,68,68,0.2)" : "var(--border)"}`,
         }}
       >

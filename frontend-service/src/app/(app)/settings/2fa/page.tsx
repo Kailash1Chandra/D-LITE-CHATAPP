@@ -134,7 +134,7 @@ export default function TwoFactorAuthPage() {
             key="err"
             initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
             className="mb-4 rounded-2xl px-4 py-3 text-sm flex items-start gap-2 overflow-hidden"
-            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "var(--danger)" }}
+            style={{ background: "rgba(239,68,68,0.22)", border: "1px solid rgba(239,68,68,0.2)", color: "var(--danger)" }}
           >
             ⚠ {error}
           </motion.div>
@@ -184,7 +184,7 @@ export default function TwoFactorAuthPage() {
         ) : (
           <div
             className="relative w-12 h-6 rounded-full shrink-0 transition-colors duration-300"
-            style={{ background: isOn ? "var(--brand-text)" : "rgba(128,128,128,0.25)" }}
+            style={{ background: isOn ? "var(--brand-text)" : "rgba(128,128,128,0.45)" }}
           >
             <motion.div
               className="absolute top-1 w-4 h-4 rounded-full bg-white shadow"

@@ -149,7 +149,7 @@ export function MembersPanel({ members, groupId, currentUserId, currentUserRole,
                 onClick={() => removeMember(m)}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors"
                 style={{ color: "var(--danger)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(239,68,68,0.22)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
                 <UserMinus size={14} /> Remove from group

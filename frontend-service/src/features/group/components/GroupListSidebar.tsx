@@ -87,7 +87,7 @@ export function GroupListSidebar() {
                     onClick={() => acceptInvite(invite)}
                     title="Accept"
                     className="w-6 h-6 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity"
-                    style={{ background: "rgba(34,197,94,0.15)", color: "var(--success)" }}
+                    style={{ background: "rgba(34,197,94,0.3)", color: "var(--success)" }}
                   >
                     <Check size={11} strokeWidth={3} />
                   </button>

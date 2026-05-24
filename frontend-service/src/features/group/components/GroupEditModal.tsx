@@ -79,7 +79,7 @@ export function GroupEditModal({ open, onClose, group, onSaved }: GroupEditModal
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+            style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(4px)" }}
             onClick={onClose}
           />
           <motion.div
@@ -121,7 +121,7 @@ export function GroupEditModal({ open, onClose, group, onSaved }: GroupEditModal
                       <AvatarBox size={80} />
                       <div
                         className="absolute inset-0 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ background: "rgba(0,0,0,0.45)" }}
+                        style={{ background: "rgba(0,0,0,0.65)" }}
                       >
                         <Camera size={20} className="text-white" />
                       </div>

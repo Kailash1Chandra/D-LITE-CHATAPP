@@ -17,7 +17,7 @@ interface BannerConfig {
 const CONFIG: Record<ChatFlag, BannerConfig> = {
   blocked: {
     icon: Ban,
-    bg: "rgba(239,68,68,0.07)",
+    bg: "rgba(239,68,68,0.2)",
     border: "rgba(239,68,68,0.2)",
     iconColor: "var(--danger)",
     text: "You've blocked this contact. They can't message you.",
@@ -25,7 +25,7 @@ const CONFIG: Record<ChatFlag, BannerConfig> = {
   },
   blockedByPeer: {
     icon: Ban,
-    bg: "rgba(239,68,68,0.07)",
+    bg: "rgba(239,68,68,0.2)",
     border: "rgba(239,68,68,0.2)",
     iconColor: "var(--danger)",
     text: "This user has blocked you. You can't send messages.",
@@ -40,8 +40,8 @@ const CONFIG: Record<ChatFlag, BannerConfig> = {
   },
   restricted: {
     icon: ShieldOff,
-    bg: "rgba(99,102,241,0.07)",
-    border: "rgba(99,102,241,0.2)",
+    bg: "rgba(99,102,241,0.32)",
+    border: "rgba(99,102,241,0.32)",
     iconColor: "var(--accent-purple)",
     text: "You've restricted this contact. They can't see your status or online time.",
     actionLabel: "Remove restriction",

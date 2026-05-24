@@ -19,7 +19,7 @@ export function ChatListItem({ chat }: { chat: ChatPreview }) {
         className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer relative"
         style={{
           background: isActive
-            ? "linear-gradient(90deg, var(--row-active-bg, rgba(168,85,247,0.15)), transparent)"
+            ? "linear-gradient(90deg, var(--row-active-bg, rgba(168,85,247,0.3)), transparent)"
             : "transparent",
         }}
         onMouseEnter={e => {
@@ -27,7 +27,7 @@ export function ChatListItem({ chat }: { chat: ChatPreview }) {
         }}
         onMouseLeave={e => {
           e.currentTarget.style.background = isActive
-            ? "linear-gradient(90deg, var(--row-active-bg, rgba(168,85,247,0.15)), transparent)"
+            ? "linear-gradient(90deg, var(--row-active-bg, rgba(168,85,247,0.3)), transparent)"
             : "transparent";
         }}
       >

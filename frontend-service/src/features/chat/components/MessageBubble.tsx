@@ -312,7 +312,7 @@ export function MessageBubble({
                 onClick={action}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors text-left"
                 style={{ color: danger ? "var(--danger)" : "var(--text-primary)" }}
-                onMouseEnter={e => (e.currentTarget.style.background = danger ? "rgba(239,68,68,0.08)" : "var(--row-hover-bg)")}
+                onMouseEnter={e => (e.currentTarget.style.background = danger ? "rgba(239,68,68,0.22)" : "var(--row-hover-bg)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
                 <Icon size={15} />

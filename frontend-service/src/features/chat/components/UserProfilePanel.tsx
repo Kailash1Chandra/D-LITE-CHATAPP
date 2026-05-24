@@ -96,7 +96,7 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
         <>
           {/* Backdrop */}
           <motion.div key="bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0 z-20" style={{ background: "rgba(0,0,0,0.3)" }}
+            className="absolute inset-0 z-20" style={{ background: "rgba(0,0,0,0.55)" }}
             onClick={onClose} />
 
           {/* Panel */}
@@ -111,7 +111,7 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
               backdropFilter: "blur(24px) saturate(180%)",
               WebkitBackdropFilter: "blur(24px) saturate(180%)",
               borderLeft: "1px solid var(--border)",
-              boxShadow: "-8px 0 32px rgba(0,0,0,0.3)",
+              boxShadow: "-8px 0 32px rgba(0,0,0,0.55)",
             }}
           >
             {/* Header */}
@@ -186,9 +186,9 @@ export function UserProfilePanel({ peerId, open, onClose, onAudioCall, onVideoCa
                       <button key={label} onClick={action}
                         className="flex flex-col items-center gap-1.5 group">
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors"
-                          style={{ background: "rgba(128,128,128,0.12)", border: "1px solid var(--border)" }}
+                          style={{ background: "rgba(128,128,128,0.3)", border: "1px solid var(--border)" }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--row-hover-bg)"}
-                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(128,128,128,0.12)"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(128,128,128,0.3)"}
                         >
                           <Icon size={18} style={{ color: "var(--brand-text)" }} />
                         </div>

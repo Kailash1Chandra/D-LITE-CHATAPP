@@ -28,7 +28,7 @@ export function GroupInfoModal({ open, onClose, group, members, isPrivate = fals
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0"
-            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
             onClick={onClose}
           />
           <motion.div
@@ -76,7 +76,7 @@ export function GroupInfoModal({ open, onClose, group, members, isPrivate = fals
                   <div
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
                     style={{
-                      background: isPrivate ? "var(--row-hover-bg)" : "rgba(34,197,94,0.12)",
+                      background: isPrivate ? "var(--row-hover-bg)" : "rgba(34,197,94,0.28)",
                       color: isPrivate ? "var(--text-muted)" : "var(--success)",
                       border: `1px solid ${isPrivate ? "var(--border)" : "rgba(34,197,94,0.3)"}`,
                     }}

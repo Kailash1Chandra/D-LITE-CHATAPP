@@ -236,7 +236,7 @@ function CallRoom() {
             <div className="absolute bottom-32 right-4 pointer-events-auto"
               style={{
                 width: 120, height: 160, borderRadius: 16, overflow: "hidden",
-                border: "2px solid rgba(255,255,255,0.2)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                border: "2px solid rgba(255,255,255,0.2)", boxShadow: "0 8px 32px rgba(0,0,0,0.75)",
                 display: showingVideo ? "block" : "none",
               }}>
               <video ref={setLocalVideoEl} autoPlay playsInline muted

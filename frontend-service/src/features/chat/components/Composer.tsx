@@ -36,7 +36,7 @@ const ATTACH_OPTIONS = [
     label: "Photo / Video",
     icon: Image,
     color: "#8b5cf6",
-    bg: "rgba(139,92,246,0.15)",
+    bg: "rgba(139,92,246,0.3)",
     accept: "image/*,video/*",
   },
   {
@@ -44,7 +44,7 @@ const ATTACH_OPTIONS = [
     label: "Document",
     icon: Paperclip,
     color: "#3b82f6",
-    bg: "rgba(59,130,246,0.15)",
+    bg: "rgba(59,130,246,0.3)",
     accept: ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip",
   },
   {
@@ -349,7 +349,7 @@ export function Composer({ onSend, placeholder = "Type a message..." }: Composer
                 style={{
                   background: "var(--surface-elevated)",
                   border: "1px solid var(--border)",
-                  boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.75)",
                   minWidth: 180,
                 }}
               >

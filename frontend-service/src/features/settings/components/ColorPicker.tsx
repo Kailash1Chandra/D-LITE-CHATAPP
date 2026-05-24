@@ -15,7 +15,7 @@ export const PALETTES = [
       "--msg-out-shadow":    "0 4px 24px rgba(124,58,237,0.5), 0 0 48px rgba(14,165,233,0.2)",
       "--row-active-border": "#7c3aed",
       "--input-border-focus":"#7c3aed",
-      "--shadow-glow":       "0 0 24px rgba(124,58,237,0.6), 0 0 48px rgba(6,182,212,0.3)",
+      "--shadow-glow":       "0 0 24px rgba(124,58,237,0.6), 0 0 48px rgba(6,182,212,0.5)",
       "--accent-purple":     "#a78bfa",
       "--row-hover-bg":      "rgba(124,58,237,0.06)",
       "--row-active-bg":     "rgba(124,58,237,0.12)",

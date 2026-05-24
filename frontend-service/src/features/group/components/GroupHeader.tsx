@@ -110,7 +110,7 @@ export function GroupHeader({ group, isPrivate = false, onLeave, onInfoClick }: 
                 style={{
                   background: "var(--surface-elevated)",
                   border: "1px solid var(--border)",
-                  boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.75)",
                   minWidth: 200,
                 }}
               >
@@ -127,7 +127,7 @@ export function GroupHeader({ group, isPrivate = false, onLeave, onInfoClick }: 
                 {onLeave && (
                   <button
                     onClick={() => { setShowMenu(false); onLeave(); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[rgba(239,68,68,0.08)]"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors hover:bg-[rgba(239,68,68,0.22)]"
                     style={{ color: "var(--danger)" }}
                   >
                     <LogOut size={15} style={{ color: "var(--danger)" }} />

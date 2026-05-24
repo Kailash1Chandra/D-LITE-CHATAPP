@@ -314,7 +314,7 @@ export default function BackupPage() {
                 className="flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all"
                 style={{
                   borderColor: format === f ? "var(--brand-text)" : "var(--border)",
-                  background: format === f ? "rgba(139,92,246,0.08)" : "var(--surface-2, var(--surface))",
+                  background: format === f ? "rgba(139,92,246,0.22)" : "var(--surface-2, var(--surface))",
                 }}>
                 {f === "json" ? <FileJson size={20} style={{ color: format === f ? "var(--brand-text)" : "var(--text-muted)" }} />
                   : f === "txt" ? <FileText size={20} style={{ color: format === f ? "var(--brand-text)" : "var(--text-muted)" }} />
@@ -335,7 +335,7 @@ export default function BackupPage() {
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
                 style={{
                   borderColor: range === v ? "var(--brand-text)" : "var(--border)",
-                  background: range === v ? "rgba(139,92,246,0.08)" : "transparent",
+                  background: range === v ? "rgba(139,92,246,0.22)" : "transparent",
                   color: range === v ? "var(--brand-text)" : "var(--text-muted)",
                 }}>
                 {l}
@@ -355,7 +355,7 @@ export default function BackupPage() {
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all"
               style={{
                 borderColor: val ? "var(--brand-text)" : "var(--border)",
-                background: val ? "rgba(139,92,246,0.08)" : "transparent",
+                background: val ? "rgba(139,92,246,0.22)" : "transparent",
                 color: val ? "var(--brand-text)" : "var(--text-muted)",
               }}>
               {val ? <Check size={12} /> : <div style={{ width: 12 }} />} {label as string}

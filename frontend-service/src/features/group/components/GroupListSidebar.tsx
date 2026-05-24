@@ -3,15 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Plus, BellOff } from "lucide-react";
+import { Search, Plus, BellOff, Bell, Check, X } from "lucide-react";
 import { Badge } from "@/shared/components/Badge";
 import { useGroupList } from "../hooks/use-group-list";
+import { useGroupInvites } from "../hooks/use-group-invites";
 import { CreateGroupModal } from "./CreateGroupModal";
 
 export function GroupListSidebar() {
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const { groups, loading } = useGroupList();
+  const { invites, acceptInvite, declineInvite } = useGroupInvites();
   const pathname = usePathname();
 
   const filtered = groups.filter((g) =>
@@ -57,6 +59,51 @@ export function GroupListSidebar() {
             />
           </div>
         </div>
+
+        {/* Pending invites */}
+        {invites.length > 0 && (
+          <div className="mx-2 mb-2 rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            <div className="px-3 py-2 flex items-center gap-2" style={{ background: "var(--row-hover-bg)" }}>
+              <Bell size={11} style={{ color: "var(--brand-text)" }} />
+              <span className="text-xs font-bold themed-text">
+                {invites.length} group invite{invites.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {invites.map((invite) => (
+              <div
+                key={invite.id}
+                className="px-3 py-2.5 flex items-center gap-2.5"
+                style={{ borderTop: "1px solid var(--border)" }}
+              >
+                <div className="w-8 h-8 rounded-lg brand-grad flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {invite.groupName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold themed-text truncate">{invite.groupName}</p>
+                  <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>from {invite.invitedBy}</p>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => acceptInvite(invite)}
+                    title="Accept"
+                    className="w-6 h-6 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity"
+                    style={{ background: "rgba(34,197,94,0.15)", color: "var(--success)" }}
+                  >
+                    <Check size={11} strokeWidth={3} />
+                  </button>
+                  <button
+                    onClick={() => declineInvite(invite.id)}
+                    title="Decline"
+                    className="w-6 h-6 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity"
+                    style={{ background: "rgba(239,68,68,0.1)", color: "var(--danger)" }}
+                  >
+                    <X size={11} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">
           {loading ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreVertical, UserPlus, UserMinus, Ban } from "lucide-react";
+import { MoreVertical, UserPlus, UserMinus, Ban, Clock, X } from "lucide-react";
 import { User } from "@/features/dashboard/lib/mock-data";
 import { Avatar } from "@/shared/components/Avatar";
 import { RoleBadge } from "./RoleBadge";
@@ -20,13 +20,57 @@ export interface MembersPanelProps {
   onMembersChange?: () => void;
 }
 
+interface PendingInvite {
+  id: string;
+  userId: string;
+  name: string;
+  initials: string;
+}
+
 export function MembersPanel({ members, groupId, currentUserId, currentUserRole, onMembersChange }: MembersPanelProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const canManage = currentUserRole === "owner" || currentUserRole === "admin";
+
+  // Load pending invites for the group (visible to owner/admin only)
+  useEffect(() => {
+    if (!canManage) return;
+    async function loadPending() {
+      const { data: inviteRows } = await supabase
+        .from("group_invites")
+        .select("id, invited_user_id")
+        .eq("group_id", groupId)
+        .eq("status", "pending");
+      if (!inviteRows?.length) { setPendingInvites([]); return; }
+      const ids = inviteRows.map((r: any) => r.invited_user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, username")
+        .in("id", ids);
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      setPendingInvites(inviteRows.map((r: any) => {
+        const p: any = profileMap.get(r.invited_user_id);
+        const name: string = p?.display_name || p?.username || "Unknown";
+        return {
+          id: r.id,
+          userId: r.invited_user_id,
+          name,
+          initials: name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase(),
+        };
+      }));
+    }
+    loadPending();
+  }, [canManage, groupId]);
+
+  async function cancelInvite(inviteId: string) {
+    await supabase.from("group_invites").delete().eq("id", inviteId);
+    setPendingInvites(prev => prev.filter(i => i.id !== inviteId));
+    toast({ title: "Invite cancelled", type: "info" });
+  }
   const online = members.filter((m) => m.isOnline);
   const offline = members.filter((m) => !m.isOnline);
   const existingIds = members.map((m) => m.id);
@@ -145,6 +189,36 @@ export function MembersPanel({ members, groupId, currentUserId, currentUserRole,
           )}
         </div>
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          {/* Pending invites — owner/admin view */}
+          {canManage && pendingInvites.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <Clock size={10} /> Pending — {pendingInvites.length}
+              </h4>
+              <div className="space-y-0.5">
+                {pendingInvites.map((inv) => (
+                  <div key={inv.id} className="flex items-center gap-3 py-2 px-2 rounded-xl -mx-2" style={{ background: "var(--row-hover-bg)" }}>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0" style={{ background: "var(--grad-brand)", opacity: 0.7 }}>
+                      {inv.initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold themed-text truncate">{inv.name}</p>
+                      <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Invite sent…</p>
+                    </div>
+                    <button
+                      onClick={() => cancelInvite(inv.id)}
+                      title="Cancel invite"
+                      className="p-1 rounded-lg hover:opacity-80 transition-opacity shrink-0"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mb-6">
             <h4 className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
               Online — {online.length}

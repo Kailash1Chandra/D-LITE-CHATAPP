@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Search, UserPlus, X } from "lucide-react";
+import { Search, UserPlus, X, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/shared/components/Avatar";
 import { createClient } from "@/core/auth/supabase-client";
@@ -43,11 +43,18 @@ export function AddMemberModal({ open, onClose, groupId, existingMemberIds, onAd
 
   async function addMember(profile: ProfileResult) {
     setAdding(profile.id);
-    await supabase.from("group_members").insert({ group_id: groupId, user_id: profile.id, role: "Member" });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setAdding(null); return; }
+
+    // Send an invite — the user must accept before being added to group_members
+    await supabase.from("group_invites").upsert(
+      { group_id: groupId, invited_user_id: profile.id, invited_by: user.id, status: "pending" },
+      { onConflict: "group_id,invited_user_id" }
+    );
+
     setAdded((prev) => new Set([...prev, profile.id]));
     setResults((prev) => prev.filter((r) => r.id !== profile.id));
     setAdding(null);
-    onAdded?.();
   }
 
   function handleClose() {
@@ -75,7 +82,7 @@ export function AddMemberModal({ open, onClose, groupId, existingMemberIds, onAd
           style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-elevated)" }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold themed-text">Add Members</h2>
+            <h2 className="text-base font-bold themed-text">Invite Members</h2>
             <button onClick={handleClose} style={{ color: "var(--text-muted)" }}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--row-hover-bg)] transition-colors">
               <X size={16} />
@@ -116,8 +123,8 @@ export function AddMemberModal({ open, onClose, groupId, existingMemberIds, onAd
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all disabled:opacity-50"
                     style={{ background: "var(--grad-brand)" }}
                   >
-                    <UserPlus size={12} />
-                    {adding === profile.id ? "…" : "Add"}
+                    {adding === profile.id ? <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <UserPlus size={12} />}
+                    {adding === profile.id ? "…" : "Invite"}
                   </button>
                 </div>
               );

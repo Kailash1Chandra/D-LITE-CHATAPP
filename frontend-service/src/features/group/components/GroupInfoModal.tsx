@@ -33,66 +33,71 @@ export function GroupInfoModal({ open, onClose, group, members, isPrivate = fals
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
-            className="relative w-full max-w-md rounded-2xl z-10 overflow-hidden"
+            className="relative w-full max-w-sm rounded-2xl z-10"
             style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-elevated)" }}
           >
-            {/* Header gradient banner */}
-            <div className="h-24 brand-grad relative">
-              <button
-                onClick={onClose}
-                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 text-white hover:bg-black/40 transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
+            {/* Close button — positioned relative to whole modal, above banner */}
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-full transition-colors"
+              style={{ background: "rgba(0,0,0,0.35)", color: "#fff" }}
+            >
+              <X size={15} />
+            </button>
 
-            {/* Avatar overlapping banner */}
-            <div className="px-6 pb-6">
-              <div className="-mt-10 mb-4 flex items-end justify-between">
+            {/* Gradient banner */}
+            <div className="h-20 brand-grad rounded-t-2xl" />
+
+            {/* Content */}
+            <div className="px-5 pb-5">
+              {/* Avatar + privacy row */}
+              <div className="flex items-end justify-between -mt-8 mb-3">
                 <div
-                  className="w-20 h-20 rounded-2xl brand-grad flex items-center justify-center text-white text-2xl font-bold shadow-lg"
-                  style={{ border: "3px solid var(--surface)" }}
+                  className="w-16 h-16 rounded-2xl brand-grad flex items-center justify-center text-white text-xl font-bold"
+                  style={{ border: "3px solid var(--surface)", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}
                 >
                   {initials}
                 </div>
                 <div
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold mb-1"
                   style={{
-                    background: isPrivate ? "var(--row-hover-bg)" : "rgba(34,197,94,0.1)",
+                    background: isPrivate ? "var(--row-hover-bg)" : "rgba(34,197,94,0.12)",
                     color: isPrivate ? "var(--text-muted)" : "var(--success)",
                     border: `1px solid ${isPrivate ? "var(--border)" : "rgba(34,197,94,0.3)"}`,
                   }}
                 >
-                  {isPrivate ? <Lock size={11} /> : <Hash size={11} />}
+                  {isPrivate ? <Lock size={10} /> : <Hash size={10} />}
                   {isPrivate ? "Private" : "Public"}
                 </div>
               </div>
 
-              <h2 className="text-xl font-bold themed-text mb-1">{group.name}</h2>
-              <p className="text-sm themed-text-3 mb-5 flex items-center gap-1.5">
-                <Users size={13} />
-                {members.length} members · <span style={{ color: "var(--success)" }}>{online} online</span>
+              {/* Name + stats */}
+              <h2 className="text-lg font-bold themed-text mb-0.5">{group.name}</h2>
+              <p className="text-xs themed-text-3 mb-4 flex items-center gap-1.5">
+                <Users size={12} />
+                {members.length} members
+                <span className="mx-0.5">·</span>
+                <span style={{ color: "var(--success)" }}>{online} online</span>
               </p>
 
-              {/* Members list */}
-              <div>
-                <h4 className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-                  Members
-                </h4>
-                <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar -mx-2 px-2">
-                  {members.map(m => (
-                    <div key={m.id} className="flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-[var(--row-hover-bg)] transition-colors">
-                      <Avatar initials={m.initials} online={m.isOnline} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold themed-text truncate">{m.name}</p>
-                        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                          {m.isOnline ? "Online" : "Offline"}
-                        </p>
-                      </div>
-                      {m.role && m.role !== "member" && <RoleBadge role={m.role} />}
+              {/* Divider */}
+              <div className="h-px mb-3" style={{ background: "var(--border)" }} />
+
+              {/* Members */}
+              <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Members</p>
+              <div className="space-y-0.5 max-h-56 overflow-y-auto custom-scrollbar -mx-1 px-1">
+                {members.map(m => (
+                  <div key={m.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-xl hover:bg-[var(--row-hover-bg)] transition-colors">
+                    <Avatar initials={m.initials} online={m.isOnline} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold themed-text truncate">{m.name}</p>
+                      <p className="text-[10px]" style={{ color: m.isOnline ? "var(--success)" : "var(--text-muted)" }}>
+                        {m.isOnline ? "Online" : "Offline"}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                    {m.role && m.role !== "member" && <RoleBadge role={m.role} />}
+                  </div>
+                ))}
               </div>
             </div>
           </motion.div>

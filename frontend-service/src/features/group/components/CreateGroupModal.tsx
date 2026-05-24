@@ -28,14 +28,14 @@ export function CreateGroupModal({ open, onClose }: CreateGroupModalProps) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Not authenticated"); setLoading(false); return; }
 
-    const { data: group, error: err } = await supabase
-      .from("groups")
-      .insert({ name: name.trim(), description: description.trim(), is_public: isPublic, created_by: user.id })
-      .select()
-      .single();
+    const groupId = crypto.randomUUID();
 
-    if (err || !group) {
-      const msg = err?.message ?? "Failed to create group";
+    const { error: err } = await supabase
+      .from("groups")
+      .insert({ id: groupId, name: name.trim(), description: description.trim(), is_public: isPublic, created_by: user.id });
+
+    if (err) {
+      const msg = err.message;
       setError(msg.includes("violates row-level security")
         ? "Permission denied. Make sure you're logged in."
         : msg);
@@ -45,11 +45,10 @@ export function CreateGroupModal({ open, onClose }: CreateGroupModalProps) {
 
     const { error: memberErr } = await supabase
       .from("group_members")
-      .insert({ group_id: (group as any).id, user_id: user.id, role: "Owner" });
+      .insert({ group_id: groupId, user_id: user.id, role: "Owner" });
 
     if (memberErr) {
-      // Group was created but membership failed — delete orphan group and show error
-      await supabase.from("groups").delete().eq("id", (group as any).id);
+      await supabase.from("groups").delete().eq("id", groupId);
       setError("Failed to set up group membership. Please try again.");
       setLoading(false);
       return;
@@ -57,7 +56,7 @@ export function CreateGroupModal({ open, onClose }: CreateGroupModalProps) {
 
     setName(""); setDescription(""); setIsPublic(false); setLoading(false);
     onClose();
-    router.push(`/groups/${(group as any).id}`);
+    router.push(`/groups/${groupId}`);
   }
 
   if (!open) return null;

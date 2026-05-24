@@ -195,18 +195,22 @@ export default function TwoFactorAuthPage() {
               </p>
             </div>
 
-            {/* QR — inject width/height into SVG so it fills the white box */}
             <div className="flex justify-center">
               {qrSvg && (
-                <div
-                  className="w-56 h-56 rounded-2xl overflow-hidden bg-white p-3 shadow-lg"
-                  dangerouslySetInnerHTML={{
-                    __html: qrSvg.replace(
-                      "<svg",
-                      '<svg style="width:100%;height:100%;display:block;"'
-                    ),
-                  }}
-                />
+                qrSvg.startsWith("data:") ? (
+                  <img
+                    src={qrSvg}
+                    alt="2FA QR Code"
+                    className="w-56 h-56 rounded-2xl bg-white p-3 shadow-lg object-contain"
+                  />
+                ) : (
+                  <div
+                    className="w-56 h-56 rounded-2xl overflow-hidden bg-white p-3 shadow-lg"
+                    dangerouslySetInnerHTML={{
+                      __html: qrSvg.replace("<svg", '<svg style="width:100%;height:100%;display:block;"'),
+                    }}
+                  />
+                )
               )}
             </div>
 

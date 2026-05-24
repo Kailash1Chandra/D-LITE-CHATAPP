@@ -6,6 +6,7 @@ import { GroupHeader } from "@/features/group/components/GroupHeader";
 import { MembersPanel } from "@/features/group/components/MembersPanel";
 import { GroupMessageBubble } from "@/features/group/components/GroupMessageBubble";
 import { GroupInfoModal } from "@/features/group/components/GroupInfoModal";
+import { GroupEditModal } from "@/features/group/components/GroupEditModal";
 import { Composer } from "@/features/chat/components/Composer";
 import { useGroupMessages } from "@/features/group/hooks/use-group-messages";
 
@@ -20,6 +21,7 @@ export default function GroupChatPage() {
 
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   async function handleLeave() {
     await leaveGroup();
@@ -48,7 +50,19 @@ export default function GroupChatPage() {
         onClose={() => setShowInfo(false)}
         group={group}
         members={members}
+        isOwner={currentUserRole === "owner"}
+        onEditClick={() => { setShowInfo(false); setShowEdit(true); }}
       />
+
+      {/* Group edit modal — only mounted when open so state resets each time */}
+      {showEdit && (
+        <GroupEditModal
+          open={true}
+          onClose={() => setShowEdit(false)}
+          group={group}
+          onSaved={reload}
+        />
+      )}
 
       {/* Leave confirmation */}
       {confirmLeave && (

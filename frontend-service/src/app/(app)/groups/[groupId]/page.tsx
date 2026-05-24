@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { GroupHeader } from "@/features/group/components/GroupHeader";
 import { MembersPanel } from "@/features/group/components/MembersPanel";
 import { GroupMessageBubble } from "@/features/group/components/GroupMessageBubble";
+import { GroupInfoModal } from "@/features/group/components/GroupInfoModal";
 import { Composer } from "@/features/chat/components/Composer";
 import { useGroupMessages } from "@/features/group/hooks/use-group-messages";
 
@@ -18,6 +19,7 @@ export default function GroupChatPage() {
   } = useGroupMessages(groupId);
 
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   async function handleLeave() {
     await leaveGroup();
@@ -34,7 +36,19 @@ export default function GroupChatPage() {
 
   return (
     <div className="flex flex-col h-full w-full relative z-0">
-      <GroupHeader group={group} onLeave={() => setConfirmLeave(true)} />
+      <GroupHeader
+        group={group}
+        onLeave={() => setConfirmLeave(true)}
+        onInfoClick={() => setShowInfo(true)}
+      />
+
+      {/* Group info modal */}
+      <GroupInfoModal
+        open={showInfo}
+        onClose={() => setShowInfo(false)}
+        group={group}
+        members={members}
+      />
 
       {/* Leave confirmation */}
       {confirmLeave && (

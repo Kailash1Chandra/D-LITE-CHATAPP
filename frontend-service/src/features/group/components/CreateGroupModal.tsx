@@ -55,6 +55,7 @@ export function CreateGroupModal({ open, onClose }: CreateGroupModalProps) {
     }
 
     setName(""); setDescription(""); setIsPublic(false); setLoading(false);
+    window.dispatchEvent(new CustomEvent("dlite:group-created", { detail: { groupId } }));
     onClose();
     router.push(`/groups/${groupId}`);
   }

@@ -75,14 +75,19 @@ export function useGroupList() {
 
     load()
 
+    // Immediate reload when this tab creates a new group (realtime can lag)
+    window.addEventListener("dlite:group-created", load)
+
     const channel = supabase
       .channel("group_list_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "group_messages" }, load)
-      // Reload when user joins/leaves a group (catches new group creation too)
       .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, load)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      window.removeEventListener("dlite:group-created", load)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   return { groups, loading }

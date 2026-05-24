@@ -13,9 +13,10 @@ export interface GroupHeaderProps {
   group: GroupPreview;
   isPrivate?: boolean;
   onLeave?: () => void;
+  onInfoClick?: () => void;
 }
 
-export function GroupHeader({ group, isPrivate = false, onLeave }: GroupHeaderProps) {
+export function GroupHeader({ group, isPrivate = false, onLeave, onInfoClick }: GroupHeaderProps) {
   const router = useRouter();
   const onlineCount = group.members.filter(m => m.isOnline).length;
   const [isMuted, setIsMuted] = useState(false);
@@ -52,7 +53,7 @@ export function GroupHeader({ group, isPrivate = false, onLeave }: GroupHeaderPr
       className="h-[72px] shrink-0 border-b px-6 flex items-center justify-between sticky top-0 z-10"
       style={{ background: "var(--header-bg)", borderColor: "var(--header-border)" }}
     >
-      <div className="flex items-center gap-4 cursor-pointer group">
+      <div className="flex items-center gap-4 cursor-pointer group" onClick={onInfoClick}>
         <StackedAvatar members={group.members} max={3} />
         <div>
           <div className="flex items-center gap-2">

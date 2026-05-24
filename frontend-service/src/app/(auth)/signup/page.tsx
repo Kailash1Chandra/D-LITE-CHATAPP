@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mars, Venus, Check, Shield, Lock, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
+import { Mars, Venus, Check, Shield, Lock, ArrowRight, Sparkles } from "lucide-react";
 import { AuthSplitVisual } from "@/features/auth/components/AuthSplitVisual";
 import { AvatarUpload } from "@/features/auth/components/AvatarUpload";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
@@ -56,8 +56,6 @@ export default function SignupPage() {
   const [gender, setGender] = useState<Gender | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [enable2fa, setEnable2fa] = useState(false);
-  const enable2faRef = useRef(false); // ref so handleSubmit always reads latest value
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,8 +91,8 @@ export default function SignupPage() {
 
     if (authError) { setError(authError.message); setLoading(false); return; }
 
-    // If 2FA enabled → QR setup, otherwise go straight to dashboard
-    window.location.href = enable2faRef.current ? "/setup-authenticator" : "/dashboard";
+    // 2FA is mandatory — always go to setup-authenticator
+    window.location.href = "/setup-authenticator";
   };
 
 
@@ -265,46 +263,6 @@ export default function SignupPage() {
                       <Lock size={9} style={{ color: "var(--brand-text)" }} /> No spam
                     </span>
                   </div>
-                </div>
-              </button>
-            </motion.div>
-
-            {/* 2FA toggle */}
-            <motion.div custom={11} variants={fadeUp} initial="hidden" animate="visible">
-              <button
-                type="button"
-                onClick={() => setEnable2fa(v => { const next = !v; enable2faRef.current = next; return next; })}
-                className="w-full rounded-2xl border p-4 flex items-center gap-3 text-left transition-all focus:outline-none"
-                style={{
-                  background: enable2fa ? "linear-gradient(135deg,rgba(124,58,237,0.08),rgba(6,182,212,0.08))" : "var(--surface)",
-                  borderColor: enable2fa ? "var(--brand-text)" : "var(--border)",
-                  boxShadow: enable2fa ? "0 0 0 3px color-mix(in srgb, var(--brand-text) 15%, transparent)" : "none",
-                }}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all"
-                  style={{
-                    background: enable2fa ? "var(--grad-brand)" : "var(--surface-elevated, var(--row-hover-bg))",
-                    boxShadow: enable2fa ? "var(--shadow-glow)" : "none",
-                  }}
-                >
-                  <ShieldCheck size={18} className={enable2fa ? "text-white" : ""} style={{ color: enable2fa ? "#fff" : "var(--text-muted)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold themed-text">Enable 2-Factor Authentication</p>
-                  <p className="text-xs themed-text-3 mt-0.5">
-                    {enable2fa ? "✓ QR code setup will open after registration" : "Scan a QR code with Google Authenticator after signup"}
-                  </p>
-                </div>
-                {/* Toggle pill */}
-                <div
-                  className="relative w-11 h-6 rounded-full shrink-0 transition-colors"
-                  style={{ background: enable2fa ? "var(--brand-text)" : "rgba(128,128,128,0.22)" }}
-                >
-                  <div
-                    className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all"
-                    style={{ left: enable2fa ? "calc(100% - 20px)" : "4px" }}
-                  />
                 </div>
               </button>
             </motion.div>

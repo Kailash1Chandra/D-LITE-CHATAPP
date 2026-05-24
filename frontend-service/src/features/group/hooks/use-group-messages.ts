@@ -58,7 +58,7 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
     setCurrentUserId(user.id)
 
     const [groupRes, membersRes, msgRes] = await Promise.all([
-      supabase.from("groups").select("id, name").eq("id", groupId).single(),
+      supabase.from("groups").select("id, name, avatar_url, avatar_bg").eq("id", groupId).single(),
       supabase
         .from("group_members")
         .select("role, user_id, profile:profiles(id, display_name, username, status)")
@@ -94,6 +94,8 @@ export function useGroupMessages(groupId: string): UseGroupMessagesReturn {
         lastMessage: "",
         time: "",
         unreadCount: 0,
+        avatarUrl: g.avatar_url ?? undefined,
+        avatarBg: g.avatar_bg ?? undefined,
       })
     }
 

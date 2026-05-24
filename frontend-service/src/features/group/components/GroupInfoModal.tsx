@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Hash, Lock, Users } from "lucide-react";
+import { X, Hash, Lock, Users, Pencil } from "lucide-react";
 import { GroupPreview } from "@/features/dashboard/lib/mock-data";
 import { Avatar } from "@/shared/components/Avatar";
 import { RoleBadge } from "./RoleBadge";
@@ -12,11 +12,14 @@ interface GroupInfoModalProps {
   group: GroupPreview;
   members: { id: string; name: string; initials: string; isOnline: boolean; role?: "owner" | "admin" | "mod" | "member" }[];
   isPrivate?: boolean;
+  isOwner?: boolean;
+  onEditClick?: () => void;
 }
 
-export function GroupInfoModal({ open, onClose, group, members, isPrivate = false }: GroupInfoModalProps) {
+export function GroupInfoModal({ open, onClose, group, members, isPrivate = false, isOwner, onEditClick }: GroupInfoModalProps) {
   const initials = group.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const online = members.filter(m => m.isOnline).length;
+  const bannerBg = group.avatarBg || "var(--grad-brand)";
 
   return (
     <AnimatePresence>
@@ -45,29 +48,42 @@ export function GroupInfoModal({ open, onClose, group, members, isPrivate = fals
               <X size={15} />
             </button>
 
-            {/* Gradient banner */}
-            <div className="h-20 brand-grad rounded-t-2xl" />
+            {/* Banner — tinted with group bg color */}
+            <div className="h-20 rounded-t-2xl" style={{ background: bannerBg }} />
 
             {/* Content */}
             <div className="px-5 pb-5">
-              {/* Avatar + privacy row */}
+              {/* Avatar + privacy + edit row */}
               <div className="flex items-end justify-between -mt-8 mb-3">
                 <div
-                  className="w-16 h-16 rounded-2xl brand-grad flex items-center justify-center text-white text-xl font-bold"
-                  style={{ border: "3px solid var(--surface)", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold overflow-hidden"
+                  style={{ background: bannerBg, border: "3px solid var(--surface)", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}
                 >
-                  {initials}
+                  {group.avatarUrl
+                    ? <img src={group.avatarUrl} alt={group.name} className="w-[85%] h-[85%] rounded-xl object-cover" />
+                    : initials}
                 </div>
-                <div
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold mb-1"
-                  style={{
-                    background: isPrivate ? "var(--row-hover-bg)" : "rgba(34,197,94,0.12)",
-                    color: isPrivate ? "var(--text-muted)" : "var(--success)",
-                    border: `1px solid ${isPrivate ? "var(--border)" : "rgba(34,197,94,0.3)"}`,
-                  }}
-                >
-                  {isPrivate ? <Lock size={10} /> : <Hash size={10} />}
-                  {isPrivate ? "Private" : "Public"}
+                <div className="flex items-center gap-2 mb-1">
+                  {isOwner && onEditClick && (
+                    <button
+                      onClick={onEditClick}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold hover:opacity-80 transition-opacity"
+                      style={{ background: "var(--grad-brand)", color: "#fff" }}
+                    >
+                      <Pencil size={9} /> Edit
+                    </button>
+                  )}
+                  <div
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                    style={{
+                      background: isPrivate ? "var(--row-hover-bg)" : "rgba(34,197,94,0.12)",
+                      color: isPrivate ? "var(--text-muted)" : "var(--success)",
+                      border: `1px solid ${isPrivate ? "var(--border)" : "rgba(34,197,94,0.3)"}`,
+                    }}
+                  >
+                    {isPrivate ? <Lock size={10} /> : <Hash size={10} />}
+                    {isPrivate ? "Private" : "Public"}
+                  </div>
                 </div>
               </div>
 

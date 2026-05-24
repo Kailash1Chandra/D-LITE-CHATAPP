@@ -23,6 +23,8 @@ export interface GroupPreview {
   lastMessage: string;
   time: string;
   unreadCount: number;
+  avatarUrl?: string;
+  avatarBg?: string;
 }
 
 export interface CallPreview {

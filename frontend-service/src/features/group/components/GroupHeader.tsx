@@ -54,7 +54,18 @@ export function GroupHeader({ group, isPrivate = false, onLeave, onInfoClick }: 
       style={{ background: "var(--header-bg)", borderColor: "var(--header-border)" }}
     >
       <div className="flex items-center gap-4 cursor-pointer group" onClick={onInfoClick}>
-        <StackedAvatar members={group.members} max={3} />
+        {(group.avatarUrl || group.avatarBg) ? (
+          <div
+            className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shrink-0 text-white text-xs font-bold"
+            style={{ background: group.avatarBg || "var(--grad-brand)" }}
+          >
+            {group.avatarUrl
+              ? <img src={group.avatarUrl} className="w-[85%] h-[85%] rounded-lg object-cover" alt="" />
+              : group.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()}
+          </div>
+        ) : (
+          <StackedAvatar members={group.members} max={3} />
+        )}
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-bold themed-text group-hover:text-[var(--brand-text)] transition-colors">
